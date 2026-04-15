@@ -5,10 +5,10 @@ from pathlib import Path
 
 DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
 INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
-OUTPUT_CSV = DATA_DIR / "inventory_optimization_results.csv"
+OUTPUT_CSV = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
 
 def solve_inventory_allocation(file_path):
-    # 1. Load the dataset
+    # Load the dataset
     df = pd.read_csv(file_path)
     df.columns = df.columns.str.strip()  # Clean column names
     
@@ -59,7 +59,7 @@ def solve_inventory_allocation(file_path):
     for idx in top_indices:
         integer_parts[idx] += 1
     
-    # --- Compilation of Results ---
+    # Results
     df['LP_Max_Revenue_Stock'] = lp_results
     df['Prop_Stock_LRM'] = integer_parts
     

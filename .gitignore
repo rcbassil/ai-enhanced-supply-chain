@@ -20,7 +20,8 @@ build/
 data/retail_forecast_with_original_values.csv
 data/forecast_vs_actual.png
 data/feature_importance.png
-data/inventory_optimization_results.csv
+data/inventory_optimization_results_scenario_1.csv
+data/inventory_optimization_results_scenario_2.csv
 
 # OS
 .DS_Store
