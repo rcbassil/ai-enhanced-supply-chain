@@ -1,0 +1,79 @@
+name: Supply Chain Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  demand-forecasting:
+    name: Demand Forecasting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Run demand-forecasting
+        run: uv run demand-forecasting
+        env:
+          MPLBACKEND: Agg
+
+      - name: Upload forecast output
+        uses: actions/upload-artifact@v4
+        with:
+          name: forecast-output
+          path: |
+            data/retail_forecast_with_original_values.csv
+            data/forecast_vs_actual.png
+            data/feature_importance.png
+
+  inventory-optimization:
+    name: Inventory Optimization
+    runs-on: ubuntu-latest
+    needs: demand-forecasting
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Download forecast output
+        uses: actions/download-artifact@v4
+        with:
+          name: forecast-output
+          path: data/
+
+      - name: Run inventory-optimization
+        run: uv run inventory-optimization
+
+  routing-optimization:
+    name: Routing Optimization
+    runs-on: ubuntu-latest
+    needs: inventory-optimization
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-packages
+
+      - name: Run routing-optimization
+        run: uv run routing-optimization

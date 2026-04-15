@@ -66,13 +66,15 @@ def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegr
     plt.legend(loc="upper right")
     plt.grid(True, linestyle="--", alpha=0.6)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(DATA_DIR / "forecast_vs_actual.png")
+    plt.close()
 
     plt.figure(figsize=(10, 8))
     xgb.plot_importance(model, max_num_features=MAX_IMPORTANCE_FEATURES, importance_type="weight", ax=plt.gca(), color="#2ca02c")
     plt.title("Key Drivers of Demand (Top 15 Features)", fontsize=16)
     plt.tight_layout()
-    plt.show()
+    plt.savefig(DATA_DIR / "feature_importance.png")
+    plt.close()
 
 
 def run() -> None:
