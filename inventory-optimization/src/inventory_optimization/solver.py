@@ -70,13 +70,15 @@ def solve_inventory_allocation(file_path):
 
 
 def run() -> None:
-    # Execute and Display
     results = solve_inventory_allocation(INPUT_CSV)
 
     print("--- Allocation Comparison ---")
     print(results[['Product', 'Price', 'Predicted Demand Forecast', 'LP_Max_Revenue_Stock', 'Prop_Stock_LRM']])
     print(f"\nTotal Revenue (LP Max): ${results['LP_Revenue'].sum():,.2f}")
     print(f"Total Revenue (Proportional): ${results['Prop_Revenue'].sum():,.2f}")
+
+    results.to_csv(OUTPUT_CSV, index=False)
+    print(f"\nResults saved to '{OUTPUT_CSV.name}'.")
 
 if __name__ == "__main__":
     run()

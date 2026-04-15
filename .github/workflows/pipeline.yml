@@ -60,6 +60,12 @@ jobs:
       - name: Run inventory-optimization
         run: uv run inventory-optimization
 
+      - name: Upload inventory output
+        uses: actions/upload-artifact@v7
+        with:
+          name: inventory-output
+          path: data/inventory_optimization_results_scenario_1.csv
+
   routing-optimization:
     name: Routing Optimization
     runs-on: ubuntu-latest
@@ -77,3 +83,9 @@ jobs:
 
       - name: Run routing-optimization
         run: uv run routing-optimization
+
+      - name: Upload routing output
+        uses: actions/upload-artifact@v7
+        with:
+          name: routing-output
+          path: data/routing_optimization_results.csv

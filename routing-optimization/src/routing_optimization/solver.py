@@ -3,6 +3,7 @@ import pandas as pd
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
+OUTPUT_CSV = DATA_DIR / "routing_optimization_results.csv"
 
 DISTANCE_MATRICES = [
     DATA_DIR / "distance_matrix_1.csv",
@@ -63,12 +64,17 @@ def optimize(matrix: np.ndarray) -> tuple[list[int], float]:
 
 
 def run() -> None:
+    rows = []
     for i, path in enumerate(DISTANCE_MATRICES, start=1):
         matrix = load_matrix(path)
         sequence, total_distance = optimize(matrix)
         print(f"\nDistance Matrix {i}: \n\n{matrix}")
         print(f"\nOptimized Sequence {i}: {sequence}")
         print(f"\nTotal Distance {i}: {total_distance}")
+        rows.append({"scenario": i, "sequence": sequence, "total_distance": total_distance})
+
+    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
+    print(f"\nResults saved to '{OUTPUT_CSV.name}'.")
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ data/forecast_vs_actual.png
 data/feature_importance.png
 data/inventory_optimization_results_scenario_1.csv
 data/inventory_optimization_results_scenario_2.csv
+data/routing_optimization_results.csv
 
 # OS
 .DS_Store
