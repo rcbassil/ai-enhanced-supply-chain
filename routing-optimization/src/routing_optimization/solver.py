@@ -66,8 +66,9 @@ def run() -> None:
     for i, path in enumerate(DISTANCE_MATRICES, start=1):
         matrix = load_matrix(path)
         sequence, total_distance = optimize(matrix)
-        print(f"Optimized Sequence {i}: {sequence}")
-        print(f"Total Distance {i}: {total_distance}")
+        print(f"\nDistance Matrix {i}: \n\n{matrix}")
+        print(f"\nOptimized Sequence {i}: {sequence}")
+        print(f"\nTotal Distance {i}: {total_distance}")
 
 
 if __name__ == "__main__":
