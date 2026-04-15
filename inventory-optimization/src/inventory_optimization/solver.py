@@ -77,7 +77,11 @@ def run() -> None:
     print(f"\nTotal Revenue (LP Max): ${results['LP_Revenue'].sum():,.2f}")
     print(f"Total Revenue (Proportional): ${results['Prop_Revenue'].sum():,.2f}")
 
-    results.to_csv(OUTPUT_CSV, index=False)
+    summary = pd.DataFrame([
+        {"Product": "TOTAL (LP Max)", "LP_Revenue": results["LP_Revenue"].sum()},
+        {"Product": "TOTAL (Proportional)", "Prop_Revenue": results["Prop_Revenue"].sum()},
+    ])
+    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV, index=False)
     print(f"\nResults saved to '{OUTPUT_CSV.name}'.")
 
 if __name__ == "__main__":
