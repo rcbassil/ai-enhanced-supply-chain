@@ -1,4 +1,4 @@
-# AI-Enhanced Supply Chain
+# AI-Enhanced Supply Chain 🚧👷
 
 A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and routing optimization.
 
