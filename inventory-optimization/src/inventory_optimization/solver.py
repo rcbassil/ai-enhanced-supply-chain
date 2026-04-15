@@ -5,7 +5,8 @@ from pathlib import Path
 
 DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
 INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
-OUTPUT_CSV = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
+OUTPUT_CSV_1 = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
+OUTPUT_CSV_2 = DATA_DIR / "inventory_optimization_results_scenario_2.csv"
 
 def solve_inventory_allocation(file_path):
     # Load the dataset
@@ -68,6 +69,54 @@ def solve_inventory_allocation(file_path):
     
     return df
 
+def solve_biased_allocation(file_path, bias_pct=0.20):
+    # Load Data
+    df = pd.read_csv(file_path)
+    df.columns = df.columns.str.strip()
+    
+    total_capacity = 100
+    total_demand = df['Predicted Demand Forecast'].sum()
+    
+    # Calculate Fair Share (100% Proportional baseline)
+    df['Fair_Share'] = (df['Predicted Demand Forecast'] / total_demand) * total_capacity
+    
+    # Setup Linear Programming Solver (OR-Tools)
+    solver = pywraplp.Solver.CreateSolver('GLOP')
+    stocks = []
+    
+    for i, row in df.iterrows():
+        # Constraint: Must receive at least (1 - bias) of the Fair Share
+        lower_bound = row['Fair_Share'] * (1 - bias_pct)
+        # Constraint: Cannot exceed forecasted demand
+        upper_bound = min(row['Predicted Demand Forecast'], total_capacity)
+        stocks.append(solver.NumVar(lower_bound, upper_bound, f"s_{i}"))
+        
+    # Constraint: Total capacity must be exactly 100
+    solver.Add(solver.Sum(stocks) == total_capacity)
+    
+    # Objective: Maximize Revenue (Price * Stock)
+    objective = solver.Objective()
+    for i, row in df.iterrows():
+        objective.SetCoefficient(stocks[i], row['Price'])
+    objective.SetMaximization()
+    
+    status = solver.Solve()
+    
+    if status == pywraplp.Solver.OPTIMAL:
+        df['Optimized_Float'] = [s.solution_value() for s in stocks]
+        
+        # Largest Remainder Method (Integer Rounding)
+        df['Final_Stock'] = df['Optimized_Float'].apply(np.floor).astype(int)
+        df['Remainder'] = df['Optimized_Float'] - df['Final_Stock']
+        
+        leftover = total_capacity - df['Final_Stock'].sum()
+        top_indices = df.sort_values(by='Remainder', ascending=False).head(int(leftover)).index
+        df.loc[top_indices, 'Final_Stock'] += 1
+        
+        # Final Metrics
+        df['Revenue'] = df['Final_Stock'] * df['Price']
+        return df[['Product', 'Price', 'Predicted Demand Forecast', 'Final_Stock', 'Revenue']]
+
 
 def run() -> None:
     results = solve_inventory_allocation(INPUT_CSV)
@@ -81,8 +130,22 @@ def run() -> None:
         {"Product": "TOTAL (LP Max)", "LP_Revenue": results["LP_Revenue"].sum()},
         {"Product": "TOTAL (Proportional)", "Prop_Revenue": results["Prop_Revenue"].sum()},
     ])
-    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV, index=False)
-    print(f"\nResults saved to '{OUTPUT_CSV.name}'.")
+    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV_1, index=False)
+    print(f"\nResults saved to '{OUTPUT_CSV_1.name}'.")
+
+
+    # Run for 20% bias
+    results = solve_biased_allocation(INPUT_CSV, bias_pct=0.20)
+    print("\n--- 20% Bias Allocation ---")
+    print(results[['Product', 'Price', 'Predicted Demand Forecast', 'Final_Stock', 'Revenue']])
+    print(f"Total Revenue: ${results['Revenue'].sum():,.2f}")
+
+    summary = pd.DataFrame([
+        {"Product": "TOTAL Revenue", "Revenue": results["Revenue"].sum()}
+    ])
+
+    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV_2, index=False)
+    print(f"\nResults saved to '{OUTPUT_CSV_2.name}'.")
 
 if __name__ == "__main__":
     run()
