@@ -16,10 +16,11 @@ dist/
 build/
 *.egg-info/
 
-# Generated output (demand-forecasting writes these, inventory-optimization reads the CSV)
+# Generated output
 data/retail_forecast_with_original_values.csv
 data/forecast_vs_actual.png
 data/feature_importance.png
+data/inventory_optimization_results.csv
 
 # OS
 .DS_Store

@@ -52,14 +52,23 @@ uv run python -m routing_optimization
 
 ### Inventory Optimization (`inventory-optimization/`)
 
-Placeholder module for inventory optimization algorithms (e.g. EOQ, safety stock, reorder point models).
+Allocates stock across products to maximise revenue under a total stock constraint, using two strategies: Linear Programming (OR-Tools GLOP) and Proportional Allocation (Largest Remainder Method).
+
+**Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
+
+**How it works:**
+1. **LP Revenue Maximisation** — OR-Tools GLOP solver finds the optimal allocation that maximises total revenue without exceeding the stock limit
+2. **Proportional Allocation** — distributes stock proportionally to predicted demand using the Largest Remainder Method
 
 **Run:**
 ```bash
+uv run demand-forecasting  # must run first
 uv run inventory-optimization
 # or
 uv run python -m inventory_optimization
 ```
+
+**Output:** `data/inventory_optimization_results.csv` + allocation comparison printed to stdout.
 
 ---
 
@@ -79,6 +88,8 @@ ai-enhanced-supply-chain/
 ├── data/
 │   ├── retail_store_inventory.csv               # Input: raw retail inventory data
 │   ├── retail_forecast_with_original_values.csv # Generated: demand output → inventory input
+│   ├── inventory_s001_north_may_2022.csv        # Input: inventory data for store S001
+│   ├── inventory_optimization_results.csv       # Generated: inventory allocation results
 │   ├── distance_matrix_1.csv                    # Input: routing scenario 1
 │   └── distance_matrix_2.csv                    # Input: routing scenario 2
 ├── demand-forecasting/
@@ -91,7 +102,7 @@ ai-enhanced-supply-chain/
 │   ├── src/inventory_optimization/
 │   │   ├── __init__.py
 │   │   ├── __main__.py
-│   │   └── solver.py                   # Inventory optimization logic (WIP)
+│   │   └── solver.py                   # LP + proportional allocation solver
 │   └── pyproject.toml
 ├── routing-optimization/
 │   ├── src/routing_optimization/

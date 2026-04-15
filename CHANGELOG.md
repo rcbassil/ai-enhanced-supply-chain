@@ -7,21 +7,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- `inventory-optimization` workspace member with `src/inventory_optimization/` package layout (`__init__.py`, `__main__.py`, `solver.py` placeholder).
+- **Inventory Optimization module** implemented: LP revenue maximisation (OR-Tools GLOP) and Proportional Allocation (Largest Remainder Method) to allocate stock under a total stock constraint.
+- `data/inventory_s001_north_may_2022.csv` — inventory dataset for store S001, North region, May 2022.
+- `inventory-optimization` writes allocation results to `data/inventory_optimization_results.csv`.
+- `ortools` added as a dependency to `inventory-optimization/pyproject.toml` and `routing-optimization/pyproject.toml`.
+- `inventory-optimization` workspace member with `src/inventory_optimization/` package layout (`__init__.py`, `__main__.py`, `solver.py`).
 - `routing-optimization` module refactored into proper package: `solver.py` with typed functions (`load_matrix`, `nearest_neighbor`, `two_opt`, `optimize`, `run`), `__init__.py`, and `__main__.py`.
 - `demand-forecasting` module refactored into proper package: `model.py` with typed functions (`load_data`, `build_model`, `evaluate`, `plot_results`, `run`), `__init__.py`, and `__main__.py`.
-- Runtime dependencies declared in each module's `pyproject.toml` (`demand-forecasting`: pandas, numpy, xgboost, scikit-learn, matplotlib; `routing-optimization`: pandas, numpy).
+- Runtime dependencies declared in each module's `pyproject.toml` (`demand-forecasting`: pandas, numpy, xgboost, scikit-learn, matplotlib; `routing-optimization`: pandas, numpy, ortools).
 - Fixed hardcoded CSV paths — now resolved relative to `__file__` via `pathlib.Path`.
 - Introduced shared `data/` directory at the workspace root; all CSV inputs and outputs centralised there.
 - Moved `retail_store_inventory.csv` from `demand-forecasting/` to `data/`.
 - Moved `distance_matrix_1.csv` and `distance_matrix_2.csv` from `routing-optimization/` to `data/`.
 - `demand-forecasting` writes forecast output to `data/retail_forecast_with_original_values.csv` for use as input to `inventory-optimization`.
 - All modules runnable via `uv run <module-name>` or `uv run python -m <package>` from the workspace root.
+- GitHub Actions pipeline (`.github/workflows/pipeline.yml`) running modules sequentially: demand-forecasting → inventory-optimization → routing-optimization.
 
 ### Changed
 - Renamed `routing-optmization/` → `routing-optimization/` (fixed typo).
 - Removed top-level scripts `xgBoost.py`, `xgboost_model.py`, `nearestneighbor_2opt.py`, and `linear_programming.py` — logic moved into `src/` packages.
 - Root `pyproject.toml` workspace members updated to include all three modules.
+- `demand-forecasting` plots saved to `data/` as PNGs instead of calling `plt.show()`.
 
 ## [0.1.0] - 2026-04-15
 
