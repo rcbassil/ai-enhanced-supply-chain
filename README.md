@@ -1,10 +1,11 @@
 # AI-Enhanced Supply Chain
 
-A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Currently covers two modules: demand forecasting with XGBoost and delivery route optimization with Nearest Neighbor + 2-opt.
+A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and route optimization.
 
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)
+
 
 Uses an XGBoost regressor to predict retail store demand (units sold) from historical inventory data.
 
@@ -28,7 +29,7 @@ python xgBoost.py
 
 ---
 
-### Routing Optimization (`routing-optmization/`)
+### Route Optimization (`route-optimization/`)
 
 Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest Neighbor construction heuristic followed by 2-opt local search refinement.
 
@@ -40,11 +41,15 @@ Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest
 
 **Run:**
 ```bash
-cd routing-optmization
+cd route-optimization
 python nearestneighbor-2opt.py
 ```
 
 **Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
+
+### Inventory Optimization (`inventory-optimization/`)
+
+Placeholder module for inventory optimization algorithms (e.g. EOQ, safety stock, reorder point models).
 
 ---
 
@@ -66,12 +71,19 @@ pip install pandas numpy xgboost scikit-learn matplotlib
 ```
 ai-enhanced-supply-chain/
 ├── demand-forecasting/
+│   ├── src/demand_forecasting/__init__.py
 │   ├── xgBoost.py                          # XGBoost demand forecasting model
-│   └── retail_store_inventory.csv          # Input dataset
-├── routing-optmization/
+│   ├── retail_store_inventory.csv          # Input dataset
+│   └── pyproject.toml
+├── inventory-optimization/
+│   ├── src/inventory_optimization/__init__.py
+│   └── pyproject.toml
+├── route-optimization/
+│   ├── src/route_optimization/__init__.py
 │   ├── nearestneighbor-2opt.py             # Nearest Neighbor + 2-opt TSP solver
 │   ├── distance_matrix_1.csv               # Distance matrix scenario 1
-│   └── distance_matrix_2.csv               # Distance matrix scenario 2
+│   ├── distance_matrix_2.csv               # Distance matrix scenario 2
+│   └── pyproject.toml
 ├── main.py
-└── pyproject.toml
+└── pyproject.toml                          # uv workspace root
 ```

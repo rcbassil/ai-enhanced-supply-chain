@@ -5,3 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "demand-forecasting",
+    "inventory-optimization",
+    "route-optimization",
+]
