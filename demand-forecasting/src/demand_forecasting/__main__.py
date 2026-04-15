@@ -1,5 +1,3 @@
 from demand_forecasting.model import run
 
-
-def main() -> None:
-    run()
+run()

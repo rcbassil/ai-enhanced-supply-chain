@@ -7,7 +7,13 @@ authors = [
     { name = "Rodrigo Bassil", email = "rcbassil@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pandas",
+    "numpy",
+    "xgboost",
+    "scikit-learn",
+    "matplotlib",
+]
 
 [project.scripts]
 demand-forecasting = "demand_forecasting:main"

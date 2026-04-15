@@ -1,39 +1,39 @@
 # AI-Enhanced Supply Chain
 
-A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and route optimization.
+A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and routing optimization.
 
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)
 
-
 Uses an XGBoost regressor to predict retail store demand (units sold) from historical inventory data.
 
-**Input:** `retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Weather Condition`, `Seasonality`, `Units Sold`, and `Demand Forecast`.
+**Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Weather Condition`, `Seasonality`, `Units Sold`, and `Demand Forecast`.
 
 **How it works:**
 - Extracts temporal features from `Date` (year, month, day, day-of-week)
 - Encodes categorical columns natively via XGBoost's `enable_categorical`
 - Trains an 80/20 chronological split (no shuffle) to respect time ordering
 - Evaluates with MAE and RMSE on the held-out test set
-- Appends `Predicted_Demand_Forecast` to the original data and saves it to `retail_forecast_with_original_values.csv`
+- Appends `Predicted_Demand_Forecast` to the original data and saves it to `data/retail_forecast_with_original_values.csv`
 - Plots actual vs. predicted demand (first 100 validation points) and a top-15 feature importance chart
 
 **Run:**
 ```bash
-cd demand-forecasting
-python xgBoost.py
+uv run demand-forecasting
+# or
+uv run python -m demand_forecasting
 ```
 
-**Output:** `retail_forecast_with_original_values.csv` + two matplotlib charts.
+**Output:** `data/retail_forecast_with_original_values.csv` + two matplotlib charts.
 
 ---
 
-### Route Optimization (`route-optimization/`)
+### Routing Optimization (`routing-optimization/`)
 
 Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest Neighbor construction heuristic followed by 2-opt local search refinement.
 
-**Input:** `distance_matrix_1.csv` and `distance_matrix_2.csv` — square distance matrices where node `0` represents the warehouse.
+**Input:** `data/distance_matrix_1.csv` and `data/distance_matrix_2.csv` — square distance matrices where node `0` represents the warehouse.
 
 **How it works:**
 1. **Nearest Neighbor** — greedily builds an initial route by always visiting the closest unvisited node.
@@ -41,49 +41,64 @@ Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest
 
 **Run:**
 ```bash
-cd route-optimization
-python nearestneighbor-2opt.py
+uv run routing-optimization
+# or
+uv run python -m routing_optimization
 ```
 
 **Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
+
+---
 
 ### Inventory Optimization (`inventory-optimization/`)
 
 Placeholder module for inventory optimization algorithms (e.g. EOQ, safety stock, reorder point models).
 
+**Run:**
+```bash
+uv run inventory-optimization
+# or
+uv run python -m inventory_optimization
+```
+
 ---
 
-## Requirements
+## Setup
 
-- Python 3.12+
-- `pandas`, `numpy`
-- `xgboost`
-- `scikit-learn`
-- `matplotlib`
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
-Install dependencies (example with pip):
 ```bash
-pip install pandas numpy xgboost scikit-learn matplotlib
+# Install all workspace members and their dependencies
+uv sync --all-packages
 ```
 
 ## Project Structure
 
 ```
 ai-enhanced-supply-chain/
+├── data/
+│   ├── retail_store_inventory.csv               # Input: raw retail inventory data
+│   ├── retail_forecast_with_original_values.csv # Generated: demand output → inventory input
+│   ├── distance_matrix_1.csv                    # Input: routing scenario 1
+│   └── distance_matrix_2.csv                    # Input: routing scenario 2
 ├── demand-forecasting/
-│   ├── src/demand_forecasting/__init__.py
-│   ├── xgBoost.py                          # XGBoost demand forecasting model
-│   ├── retail_store_inventory.csv          # Input dataset
+│   ├── src/demand_forecasting/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── model.py                    # XGBoost demand forecasting logic
 │   └── pyproject.toml
 ├── inventory-optimization/
-│   ├── src/inventory_optimization/__init__.py
+│   ├── src/inventory_optimization/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── solver.py                   # Inventory optimization logic (WIP)
 │   └── pyproject.toml
-├── route-optimization/
-│   ├── src/route_optimization/__init__.py
-│   ├── nearestneighbor-2opt.py             # Nearest Neighbor + 2-opt TSP solver
-│   ├── distance_matrix_1.csv               # Distance matrix scenario 1
-│   ├── distance_matrix_2.csv               # Distance matrix scenario 2
+├── routing-optimization/
+│   ├── src/routing_optimization/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
 │   └── pyproject.toml
 ├── main.py
-└── pyproject.toml                          # uv workspace root
+└── pyproject.toml                      # uv workspace root
 ```

@@ -1,5 +1,3 @@
 from inventory_optimization.solver import run
 
-
-def main() -> None:
-    run()
+run()

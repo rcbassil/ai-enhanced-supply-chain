@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# uv
+.uv/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Generated output (demand-forecasting writes this, inventory-optimization reads it)
+data/retail_forecast_with_original_values.csv
+
+# OS
+.DS_Store

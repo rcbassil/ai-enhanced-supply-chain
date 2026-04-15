@@ -10,5 +10,5 @@ dependencies = []
 members = [
     "demand-forecasting",
     "inventory-optimization",
-    "route-optimization",
+    "routing-optimization",
 ]
