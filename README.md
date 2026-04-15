@@ -52,13 +52,13 @@ uv run python -m routing_optimization
 
 ### Inventory Optimization (`inventory-optimization/`)
 
-Allocates stock across products to maximise revenue under a total stock constraint, using two strategies: Linear Programming (OR-Tools GLOP) and Proportional Allocation (Largest Remainder Method).
+Allocates stock across products to maximise revenue under a total stock constraint. Produces two scenario outputs.
 
 **Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
 
 **How it works:**
-1. **LP Revenue Maximisation** — OR-Tools GLOP solver finds the optimal allocation that maximises total revenue without exceeding the stock limit
-2. **Proportional Allocation** — distributes stock proportionally to predicted demand using the Largest Remainder Method
+1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
+2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
 
 **Run:**
 ```bash
@@ -68,7 +68,7 @@ uv run inventory-optimization
 uv run python -m inventory_optimization
 ```
 
-**Output:** `data/inventory_optimization_results.csv` + allocation comparison printed to stdout.
+**Output:** `data/inventory_optimization_results_scenario_1.csv` and `data/inventory_optimization_results_scenario_2.csv`.
 
 ---
 
@@ -88,8 +88,9 @@ ai-enhanced-supply-chain/
 ├── data/
 │   ├── retail_store_inventory.csv               # Input: raw retail inventory data
 │   ├── retail_forecast_with_original_values.csv # Generated: demand output → inventory input
-│   ├── inventory_s001_north_may_2022.csv        # Input: inventory data for store S001
-│   ├── inventory_optimization_results.csv       # Generated: inventory allocation results
+│   ├── inventory_s001_north_may_2022.csv                  # Input: inventory data for store S001
+│   ├── inventory_optimization_results_scenario_1.csv     # Generated: LP vs proportional
+│   ├── inventory_optimization_results_scenario_2.csv     # Generated: biased allocation
 │   ├── distance_matrix_1.csv                    # Input: routing scenario 1
 │   └── distance_matrix_2.csv                    # Input: routing scenario 2
 ├── demand-forecasting/

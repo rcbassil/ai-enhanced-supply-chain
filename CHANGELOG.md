@@ -7,9 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **Inventory Optimization module** implemented: LP revenue maximisation (OR-Tools GLOP) and Proportional Allocation (Largest Remainder Method) to allocate stock under a total stock constraint.
+- **Inventory Optimization module** implemented with two scenarios:
+  - Scenario 1 (`solve_inventory_allocation`): LP revenue maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method) — output to `data/inventory_optimization_results_scenario_1.csv`.
+  - Scenario 2 (`solve_biased_allocation`): biased LP allocation guaranteeing each product at least 80% of its fair share — output to `data/inventory_optimization_results_scenario_2.csv`.
+- Total revenue summary rows appended to both output CSVs.
 - `data/inventory_s001_north_may_2022.csv` — inventory dataset for store S001, North region, May 2022.
-- `inventory-optimization` writes allocation results to `data/inventory_optimization_results.csv`.
 - `ortools` added as a dependency to `inventory-optimization/pyproject.toml` and `routing-optimization/pyproject.toml`.
 - `inventory-optimization` workspace member with `src/inventory_optimization/` package layout (`__init__.py`, `__main__.py`, `solver.py`).
 - `routing-optimization` module refactored into proper package: `solver.py` with typed functions (`load_matrix`, `nearest_neighbor`, `two_opt`, `optimize`, `run`), `__init__.py`, and `__main__.py`.
