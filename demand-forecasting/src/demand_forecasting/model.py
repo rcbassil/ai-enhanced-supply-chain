@@ -80,7 +80,7 @@ def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegr
 def run() -> None:
     df_original, df_ml = load_data(INPUT_CSV)
 
-    X = df_ml.drop(["Date", "Demand Forecast"], axis=1)
+    X = df_ml.drop(["Date"], axis=1)
     y = df_ml[TARGET]
 
     X_train, X_test, y_train, y_test = train_test_split(

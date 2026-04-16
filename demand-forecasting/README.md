@@ -23,10 +23,15 @@ XGBoost regressor that predicts retail store demand (units sold) from historical
 | Product ID | categorical |
 | Category | categorical |
 | Region | categorical |
-| Weather Condition | categorical |
-| Seasonality | categorical |
+| Inventory Level | numeric (feature) |
 | Units Sold | numeric (target) |
-| Demand Forecast | numeric (dropped during training) |
+| Units Ordered | numeric (feature) |
+| Price | numeric (feature) |
+| Discount | numeric (feature) |
+| Weather Condition | categorical |
+| Holiday/Promotion | numeric (feature) |
+| Competitor Pricing | numeric (feature) |
+| Seasonality | categorical |
 
 ## Output
 
