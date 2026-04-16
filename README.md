@@ -72,6 +72,37 @@ uv run python -m inventory_optimization
 
 ---
 
+---
+
+### Natural Language Query (`query.py`)
+
+An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.6.
+
+**How it works:**
+- Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
+- Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
+- Conversation is multi-turn — Claude remembers context within a session
+
+**Setup:** Set your Anthropic API key:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**Run:**
+```bash
+uv run python query.py
+```
+
+**Example questions:**
+- *"Which product generates the most revenue under LP max allocation?"*
+- *"How does proportional allocation compare to LP max — which products lose out?"*
+- *"Explain the fairness tradeoff in the 20% biased scenario"*
+- *"Why does LP ignore P3 even though it has the highest demand?"*
+
+Type `clear` to reset the conversation or `exit` to quit.
+
+---
+
 ## Setup
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
@@ -111,6 +142,7 @@ ai-enhanced-supply-chain/
 │   │   ├── __main__.py
 │   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
 │   └── pyproject.toml
+├── query.py                            # Natural language query interface (Claude Opus 4.6)
 ├── main.py
 └── pyproject.toml                      # uv workspace root
 ```
