@@ -55,6 +55,7 @@ Uses an XGBoost regressor to predict retail store demand (units sold) from histo
 **Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Inventory Level`, `Units Sold`, `Units Ordered`, `Price`, `Discount`, `Weather Condition`, `Holiday/Promotion`, `Competitor Pricing`, and `Seasonality`.
 
 **How it works:**
+
 - Extracts temporal features from `Date` (year, month, day, day-of-week)
 - Encodes categorical columns natively via XGBoost's `enable_categorical`
 - Trains an 80/20 chronological split (no shuffle) to respect time ordering
@@ -63,6 +64,7 @@ Uses an XGBoost regressor to predict retail store demand (units sold) from histo
 - Plots actual vs. predicted demand (first 100 validation points) and a top-15 feature importance chart
 
 **Run:**
+
 ```bash
 uv run demand-forecasting
 # or
@@ -80,10 +82,12 @@ Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest
 **Input:** `data/distance_matrix_1.csv` and `data/distance_matrix_2.csv` — square distance matrices where node `0` represents the warehouse.
 
 **How it works:**
+
 1. **Nearest Neighbor** — greedily builds an initial route by always visiting the closest unvisited node.
 2. **2-opt** — iteratively reverses sub-segments of the route whenever doing so reduces total distance, until no improvement is found.
 
 **Run:**
+
 ```bash
 uv run routing-optimization
 # or
@@ -101,10 +105,12 @@ Allocates stock across products to maximise revenue under a total stock constrai
 **Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
 
 **How it works:**
+
 1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
 2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
 
 **Run:**
+
 ```bash
 uv run demand-forecasting  # must run first
 uv run inventory-optimization
@@ -116,32 +122,34 @@ uv run python -m inventory_optimization
 
 ---
 
----
-
 ### Natural Language Query (`query.py`)
 
 An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.6.
 
 **How it works:**
+
 - Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
 - Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
 - Conversation is multi-turn — Claude remembers context within a session
 
 **Setup:** Set your Anthropic API key:
+
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
 **Run:**
+
 ```bash
 uv run python query.py
 ```
 
 **Example questions:**
-- *"Which product generates the most revenue under LP max allocation?"*
-- *"How does proportional allocation compare to LP max — which products lose out?"*
-- *"Explain the fairness tradeoff in the 20% biased scenario"*
-- *"Why does LP ignore P3 even though it has the highest demand?"*
+
+- _"Which product generates the most revenue under LP max allocation?"_
+- _"How does proportional allocation compare to LP max — which products lose out?"_
+- _"Explain the fairness tradeoff in the 20% biased scenario"_
+- _"Why does LP ignore P3 even though it has the highest demand?"_
 
 Type `clear` to reset the conversation or `exit` to quit.
 
