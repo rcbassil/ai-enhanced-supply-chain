@@ -2,6 +2,50 @@
 
 A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and routing optimization.
 
+## Project Structure
+
+```
+ai-enhanced-supply-chain/
+├── data/
+│   ├── retail_store_inventory.csv               # Input: raw retail inventory data
+│   ├── retail_forecast_with_original_values.csv # Generated: demand output → inventory input
+│   ├── inventory_s001_north_may_2022.csv                  # Input: inventory data for store S001
+│   ├── inventory_optimization_results_scenario_1.csv     # Generated: LP vs proportional
+│   ├── inventory_optimization_results_scenario_2.csv     # Generated: biased allocation
+│   ├── distance_matrix_1.csv                    # Input: routing scenario 1
+│   └── distance_matrix_2.csv                    # Input: routing scenario 2
+├── demand-forecasting/
+│   ├── src/demand_forecasting/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── model.py                    # XGBoost demand forecasting logic
+│   └── pyproject.toml
+├── inventory-optimization/
+│   ├── src/inventory_optimization/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── solver.py                   # LP + proportional allocation solver
+│   └── pyproject.toml
+├── routing-optimization/
+│   ├── src/routing_optimization/
+│   │   ├── __init__.py
+│   │   ├── __main__.py
+│   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
+│   └── pyproject.toml
+├── query.py                            # Natural language query interface (Claude Opus 4.6)
+├── main.py
+└── pyproject.toml                      # uv workspace root
+```
+
+## Setup
+
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+
+```bash
+# Install all workspace members and their dependencies
+uv sync --all-packages
+```
+
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)
@@ -102,47 +146,3 @@ uv run python query.py
 Type `clear` to reset the conversation or `exit` to quit.
 
 ---
-
-## Setup
-
-Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
-
-```bash
-# Install all workspace members and their dependencies
-uv sync --all-packages
-```
-
-## Project Structure
-
-```
-ai-enhanced-supply-chain/
-├── data/
-│   ├── retail_store_inventory.csv               # Input: raw retail inventory data
-│   ├── retail_forecast_with_original_values.csv # Generated: demand output → inventory input
-│   ├── inventory_s001_north_may_2022.csv                  # Input: inventory data for store S001
-│   ├── inventory_optimization_results_scenario_1.csv     # Generated: LP vs proportional
-│   ├── inventory_optimization_results_scenario_2.csv     # Generated: biased allocation
-│   ├── distance_matrix_1.csv                    # Input: routing scenario 1
-│   └── distance_matrix_2.csv                    # Input: routing scenario 2
-├── demand-forecasting/
-│   ├── src/demand_forecasting/
-│   │   ├── __init__.py
-│   │   ├── __main__.py
-│   │   └── model.py                    # XGBoost demand forecasting logic
-│   └── pyproject.toml
-├── inventory-optimization/
-│   ├── src/inventory_optimization/
-│   │   ├── __init__.py
-│   │   ├── __main__.py
-│   │   └── solver.py                   # LP + proportional allocation solver
-│   └── pyproject.toml
-├── routing-optimization/
-│   ├── src/routing_optimization/
-│   │   ├── __init__.py
-│   │   ├── __main__.py
-│   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
-│   └── pyproject.toml
-├── query.py                            # Natural language query interface (Claude Opus 4.6)
-├── main.py
-└── pyproject.toml                      # uv workspace root
-```
