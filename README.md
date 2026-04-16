@@ -2,116 +2,6 @@
 
 A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and routing optimization.
 
-## Modules
-
-### Demand Forecasting (`demand-forecasting/`)
-
-Uses an XGBoost regressor to predict retail store demand (units sold) from historical inventory data.
-
-**Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Inventory Level`, `Units Sold`, `Units Ordered`, `Price`, `Discount`, `Weather Condition`, `Holiday/Promotion`, `Competitor Pricing`, and `Seasonality`.
-
-**How it works:**
-- Extracts temporal features from `Date` (year, month, day, day-of-week)
-- Encodes categorical columns natively via XGBoost's `enable_categorical`
-- Trains an 80/20 chronological split (no shuffle) to respect time ordering
-- Evaluates with MAE and RMSE on the held-out test set
-- Appends `Predicted_Demand_Forecast` to the original data and saves it to `data/retail_forecast_with_original_values.csv`
-- Plots actual vs. predicted demand (first 100 validation points) and a top-15 feature importance chart
-
-**Run:**
-```bash
-uv run demand-forecasting
-# or
-uv run python -m demand_forecasting
-```
-
-**Output:** `data/retail_forecast_with_original_values.csv` + two matplotlib charts.
-
----
-
-### Routing Optimization (`routing-optimization/`)
-
-Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest Neighbor construction heuristic followed by 2-opt local search refinement.
-
-**Input:** `data/distance_matrix_1.csv` and `data/distance_matrix_2.csv` — square distance matrices where node `0` represents the warehouse.
-
-**How it works:**
-1. **Nearest Neighbor** — greedily builds an initial route by always visiting the closest unvisited node.
-2. **2-opt** — iteratively reverses sub-segments of the route whenever doing so reduces total distance, until no improvement is found.
-
-**Run:**
-```bash
-uv run routing-optimization
-# or
-uv run python -m routing_optimization
-```
-
-**Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
-
----
-
-### Inventory Optimization (`inventory-optimization/`)
-
-Allocates stock across products to maximise revenue under a total stock constraint. Produces two scenario outputs.
-
-**Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
-
-**How it works:**
-1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
-2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
-
-**Run:**
-```bash
-uv run demand-forecasting  # must run first
-uv run inventory-optimization
-# or
-uv run python -m inventory_optimization
-```
-
-**Output:** `data/inventory_optimization_results_scenario_1.csv` and `data/inventory_optimization_results_scenario_2.csv`.
-
----
-
----
-
-### Natural Language Query (`query.py`)
-
-An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.6.
-
-**How it works:**
-- Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
-- Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
-- Conversation is multi-turn — Claude remembers context within a session
-
-**Setup:** Set your Anthropic API key:
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
-**Run:**
-```bash
-uv run python query.py
-```
-
-**Example questions:**
-- *"Which product generates the most revenue under LP max allocation?"*
-- *"How does proportional allocation compare to LP max — which products lose out?"*
-- *"Explain the fairness tradeoff in the 20% biased scenario"*
-- *"Why does LP ignore P3 even though it has the highest demand?"*
-
-Type `clear` to reset the conversation or `exit` to quit.
-
----
-
-## Setup
-
-Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
-
-```bash
-# Install all workspace members and their dependencies
-uv sync --all-packages
-```
-
 ## Project Structure
 
 ```
@@ -146,3 +36,119 @@ ai-enhanced-supply-chain/
 ├── main.py
 └── pyproject.toml                      # uv workspace root
 ```
+
+## Setup
+
+Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
+
+```bash
+# Install all workspace members and their dependencies
+uv sync --all-packages
+```
+
+## Modules
+
+### Demand Forecasting (`demand-forecasting/`)
+
+Uses an XGBoost regressor to predict retail store demand (units sold) from historical inventory data.
+
+**Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Inventory Level`, `Units Sold`, `Units Ordered`, `Price`, `Discount`, `Weather Condition`, `Holiday/Promotion`, `Competitor Pricing`, and `Seasonality`.
+
+**How it works:**
+
+- Extracts temporal features from `Date` (year, month, day, day-of-week)
+- Encodes categorical columns natively via XGBoost's `enable_categorical`
+- Trains an 80/20 chronological split (no shuffle) to respect time ordering
+- Evaluates with MAE and RMSE on the held-out test set
+- Appends `Predicted_Demand_Forecast` to the original data and saves it to `data/retail_forecast_with_original_values.csv`
+- Plots actual vs. predicted demand (first 100 validation points) and a top-15 feature importance chart
+
+**Run:**
+
+```bash
+uv run demand-forecasting
+# or
+uv run python -m demand_forecasting
+```
+
+**Output:** `data/retail_forecast_with_original_values.csv` + two matplotlib charts.
+
+---
+
+### Routing Optimization (`routing-optimization/`)
+
+Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest Neighbor construction heuristic followed by 2-opt local search refinement.
+
+**Input:** `data/distance_matrix_1.csv` and `data/distance_matrix_2.csv` — square distance matrices where node `0` represents the warehouse.
+
+**How it works:**
+
+1. **Nearest Neighbor** — greedily builds an initial route by always visiting the closest unvisited node.
+2. **2-opt** — iteratively reverses sub-segments of the route whenever doing so reduces total distance, until no improvement is found.
+
+**Run:**
+
+```bash
+uv run routing-optimization
+# or
+uv run python -m routing_optimization
+```
+
+**Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
+
+---
+
+### Inventory Optimization (`inventory-optimization/`)
+
+Allocates stock across products to maximise revenue under a total stock constraint. Produces two scenario outputs.
+
+**Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
+
+**How it works:**
+
+1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
+2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
+
+**Run:**
+
+```bash
+uv run demand-forecasting  # must run first
+uv run inventory-optimization
+# or
+uv run python -m inventory_optimization
+```
+
+**Output:** `data/inventory_optimization_results_scenario_1.csv` and `data/inventory_optimization_results_scenario_2.csv`.
+
+---
+
+### Natural Language Query (`query.py`)
+
+An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.6.
+
+**How it works:**
+
+- Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
+- Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
+- Conversation is multi-turn — Claude remembers context within a session
+
+**Setup:** Set your Anthropic API key:
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**Run:**
+
+```bash
+uv run python query.py
+```
+
+**Example questions:**
+
+- _"Which product generates the most revenue under LP max allocation?"_
+- _"How does proportional allocation compare to LP max — which products lose out?"_
+- _"Explain the fairness tradeoff in the 20% biased scenario"_
+- _"Why does LP ignore P3 even though it has the highest demand?"_
+
+Type `clear` to reset the conversation or `exit` to quit.
