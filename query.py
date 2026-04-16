@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Query the supply chain project with natural language using Claude."""
+
+import anthropic
+import json
+from pathlib import Path
+
+DATA_DIR = Path(__file__).parent / "data"
+
+client = anthropic.Anthropic()
+
+SYSTEM_PROMPT = """You are an AI assistant for an AI-enhanced supply chain project.
+The project uses linear programming (OR-Tools) to optimize inventory allocation across products.
+
+You have access to tools that let you read CSV data files and run the optimization solver.
+
+Key concepts:
+- LP Max Revenue: allocates stock to maximize total revenue (concentrates on high-price items)
+- Proportional (LRM): allocates stock proportionally to demand forecasts using the Largest Remainder Method
+- Biased Allocation: LP optimization with a fairness constraint — each product gets at least 80% of its fair share
+
+The data covers Store S001 North, May 2022. Total stock limit is 100 units.
+
+When answering, use the tools to fetch real data rather than guessing."""
+
+tools = [
+    {
+        "name": "list_data_files",
+        "description": "List all CSV data files available in the project data directory.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
+    {
+        "name": "read_data_file",
+        "description": "Read a CSV data file and return its contents as a table.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "CSV filename (e.g. 'inventory_s001_north_may_2022.csv')",
+                }
+            },
+            "required": ["filename"],
+        },
+    },
+    {
+        "name": "run_inventory_solver",
+        "description": (
+            "Run the inventory optimization solver and return fresh results. "
+            "Scenario 1: LP Max Revenue vs Proportional allocation. "
+            "Scenario 2: 20% biased allocation (fairness-constrained LP)."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "scenario": {
+                    "type": "integer",
+                    "enum": [1, 2],
+                    "description": "1 for LP Max vs Proportional, 2 for 20% biased allocation",
+                }
+            },
+            "required": ["scenario"],
+        },
+    },
+]
+
+
+def execute_tool(name: str, tool_input: dict) -> str:
+    if name == "list_data_files":
+        files = sorted(DATA_DIR.glob("*.csv"))
+        if not files:
+            return "No CSV files found in data directory."
+        return "\n".join(f.name for f in files)
+
+    elif name == "read_data_file":
+        filename = tool_input["filename"]
+        path = DATA_DIR / filename
+        if not path.exists():
+            available = ", ".join(f.name for f in sorted(DATA_DIR.glob("*.csv")))
+            return f"File '{filename}' not found. Available files: {available}"
+        try:
+            import pandas as pd
+            df = pd.read_csv(path)
+            df.columns = df.columns.str.strip()
+            return df.to_string(index=False)
+        except Exception as e:
+            return f"Error reading file: {e}"
+
+    elif name == "run_inventory_solver":
+        scenario = tool_input["scenario"]
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent / "inventory-optimization" / "src"))
+            from inventory_optimization.solver import (
+                solve_inventory_allocation,
+                solve_biased_allocation,
+                INPUT_CSV,
+            )
+            if scenario == 1:
+                df = solve_inventory_allocation(INPUT_CSV)
+                cols = ["Product", "Price", "Predicted Demand Forecast",
+                        "LP_Max_Revenue_Stock", "Prop_Stock_LRM",
+                        "LP_Revenue", "Prop_Revenue"]
+                df_display = df[[c for c in cols if c in df.columns]]
+                total_lp = df["LP_Revenue"].sum()
+                total_prop = df["Prop_Revenue"].sum()
+                return (
+                    df_display.to_string(index=False)
+                    + f"\n\nTotal LP Max Revenue: ${total_lp:,.2f}"
+                    + f"\nTotal Proportional Revenue: ${total_prop:,.2f}"
+                )
+            else:
+                df = solve_biased_allocation(INPUT_CSV, bias_pct=0.20)
+                total = df["Revenue"].sum()
+                return (
+                    df.to_string(index=False)
+                    + f"\n\nTotal Revenue (20% bias): ${total:,.2f}"
+                )
+        except Exception as e:
+            return f"Error running solver: {e}"
+
+    return f"Unknown tool: {name}"
+
+
+def query(user_message: str, history: list[dict]) -> list[dict]:
+    """Send a message and stream the response, handling tool calls in a loop."""
+    history = history + [{"role": "user", "content": user_message}]
+
+    while True:
+        with client.messages.stream(
+            model="claude-opus-4-6",
+            max_tokens=16000,
+            thinking={"type": "adaptive"},
+            system=SYSTEM_PROMPT,
+            tools=tools,
+            messages=history,
+        ) as stream:
+            for text in stream.text_stream:
+                print(text, end="", flush=True)
+            response = stream.get_final_message()
+
+        history.append({"role": "assistant", "content": response.content})
+
+        if response.stop_reason == "end_turn":
+            print()
+            break
+
+        if response.stop_reason == "tool_use":
+            tool_results = []
+            for block in response.content:
+                if block.type == "tool_use":
+                    print(f"\n[Tool: {block.name}({json.dumps(block.input)})]", flush=True)
+                    result = execute_tool(block.name, block.input)
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result,
+                    })
+            history.append({"role": "user", "content": tool_results})
+
+    return history
+
+
+def main():
+    print("Supply Chain Query Interface (Claude Opus 4.6)")
+    print("Type 'exit' or 'quit' to quit, 'clear' to reset conversation\n")
+
+    history = []
+    while True:
+        try:
+            user_input = input("You: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye!")
+            break
+
+        if user_input.lower() in ("exit", "quit"):
+            break
+        if user_input.lower() == "clear":
+            history = []
+            print("[Conversation cleared]\n")
+            continue
+        if not user_input:
+            continue
+
+        print("Claude: ", end="", flush=True)
+        history = query(user_input, history)
+        print()
+
+
+if __name__ == "__main__":
+    main()

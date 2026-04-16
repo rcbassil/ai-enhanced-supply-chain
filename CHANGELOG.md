@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **Natural language query interface** (`query.py`): interactive CLI powered by Claude Opus 4.6 (Anthropic SDK) that lets users ask questions about supply chain data and optimization results in plain English.
+  - Three tools available to Claude at runtime: `list_data_files`, `read_data_file`, `read_inventory_solver`.
+  - Streaming responses with adaptive thinking enabled.
+  - Multi-turn conversation with `clear` and `exit` commands.
+- `anthropic>=0.50.0` added as a root workspace dependency in `pyproject.toml`.
+
+### Added (prior)
 - **Inventory Optimization module** implemented with two scenarios:
   - Scenario 1 (`solve_inventory_allocation`): LP revenue maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method) — output to `data/inventory_optimization_results_scenario_1.csv`.
   - Scenario 2 (`solve_biased_allocation`): biased LP allocation guaranteeing each product at least 80% of its fair share — output to `data/inventory_optimization_results_scenario_2.csv`.
