@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Demand Forecasting**: removed `Demand Forecast` column from `data/retail_store_inventory.csv` and from model training. The dataset now includes richer features — `Inventory Level`, `Units Ordered`, `Price`, `Discount`, `Holiday/Promotion`, and `Competitor Pricing` — replacing the former forecast column.
+
 ### Added
 - **Natural language query interface** (`query.py`): interactive CLI powered by Claude Opus 4.6 (Anthropic SDK) that lets users ask questions about supply chain data and optimization results in plain English.
   - Three tools available to Claude at runtime: `list_data_files`, `read_data_file`, `read_inventory_solver`.

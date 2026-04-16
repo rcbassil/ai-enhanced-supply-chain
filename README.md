@@ -8,7 +8,7 @@ A Python toolkit applying machine learning and combinatorial optimization to sup
 
 Uses an XGBoost regressor to predict retail store demand (units sold) from historical inventory data.
 
-**Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Weather Condition`, `Seasonality`, `Units Sold`, and `Demand Forecast`.
+**Input:** `data/retail_store_inventory.csv` — columns include `Date`, `Store ID`, `Product ID`, `Category`, `Region`, `Inventory Level`, `Units Sold`, `Units Ordered`, `Price`, `Discount`, `Weather Condition`, `Holiday/Promotion`, `Competitor Pricing`, and `Seasonality`.
 
 **How it works:**
 - Extracts temporal features from `Date` (year, month, day, day-of-week)
