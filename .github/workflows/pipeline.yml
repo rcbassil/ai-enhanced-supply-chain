@@ -64,7 +64,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: inventory-output
-          path: data/inventory_optimization_results_scenario_1.csv
+          path: |
+            data/inventory_optimization_results_scenario_1.csv
+            data/inventory_optimization_results_scenario_2.csv
 
   routing-optimization:
     name: Routing Optimization
