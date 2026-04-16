@@ -152,5 +152,3 @@ uv run python query.py
 - _"Why does LP ignore P3 even though it has the highest demand?"_
 
 Type `clear` to reset the conversation or `exit` to quit.
-
----
