@@ -1,0 +1,113 @@
+<mxGraphModel adaptiveColors="auto">
+  <root>
+    <mxCell id="0"/>
+    <mxCell id="1" parent="0"/>
+    
+    <!-- SWIMLANES / CONTAINERS -->
+    
+    <!-- Input Data Layer -->
+    <mxCell id="input_layer" value="Input Data (data/)" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="40" y="80" width="200" height="360" as="geometry"/>
+    </mxCell>
+    
+    <!-- Processing Layer -->
+    <mxCell id="process_layer" value="Algorithms &amp; Optimization" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="300" y="80" width="220" height="360" as="geometry"/>
+    </mxCell>
+    
+    <!-- Output Layer -->
+    <mxCell id="output_layer" value="Output Artifacts" style="swimlane;whiteSpace=wrap;html=1;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+      <mxGeometry x="580" y="80" width="220" height="360" as="geometry"/>
+    </mxCell>
+
+    <!-- COMPONENTS -->
+
+    <!-- Inputs -->
+    <mxCell id="raw_inventory" value="retail_store_inventory.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="input_layer">
+      <mxGeometry x="20" y="50" width="160" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="distance_matrix" value="distance_matrix_*.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="input_layer">
+      <mxGeometry x="20" y="250" width="160" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- Processing -->
+    <mxCell id="demand_forecast" value="&lt;b&gt;Demand Forecasting&lt;/b&gt;&lt;br&gt;(XGBoost Regressor)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="process_layer">
+      <mxGeometry x="20" y="50" width="180" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="inventory_opt" value="&lt;b&gt;Inventory Optimization&lt;/b&gt;&lt;br&gt;(OR-Tools GLOP LP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="process_layer">
+      <mxGeometry x="20" y="150" width="180" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="routing_opt" value="&lt;b&gt;Routing Optimization&lt;/b&gt;&lt;br&gt;(Nearest Neighbor + 2-opt)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="process_layer">
+      <mxGeometry x="20" y="250" width="180" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- Outputs -->
+    <mxCell id="forecast_csv" value="retail_forecast_with_&lt;br&gt;original_values.csv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="output_layer">
+      <mxGeometry x="20" y="50" width="180" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="scenario_results" value="Scenario Results&lt;br&gt;(LP vs Proportional)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="output_layer">
+      <mxGeometry x="20" y="150" width="180" height="60" as="geometry"/>
+    </mxCell>
+    <mxCell id="optimized_routes" value="Optimized Delivery Routes&lt;br&gt;(Console Output)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="output_layer">
+      <mxGeometry x="20" y="250" width="180" height="60" as="geometry"/>
+    </mxCell>
+
+    <!-- Interface (outside swimlanes) -->
+    <mxCell id="query_interface" value="&lt;b&gt;Natural Language Query Interface&lt;/b&gt;&lt;br&gt;(query.py + Claude Opus 4.6)" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+      <mxGeometry x="300" y="480" width="220" height="80" as="geometry"/>
+    </mxCell>
+
+    <!-- EDGES -->
+
+    <!-- Demand Forecasting Flow -->
+    <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="raw_inventory" target="demand_forecast">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="demand_forecast" target="forecast_csv">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Inventory Optimization Flow -->
+    <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="forecast_csv" target="inventory_opt">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="690" y="130"/>
+          <mxPoint x="550" y="130"/>
+          <mxPoint x="550" y="200"/>
+          <mxPoint x="410" y="200"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="inventory_opt" target="scenario_results">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Routing Optimization Flow -->
+    <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="distance_matrix" target="routing_opt">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="routing_opt" target="optimized_routes">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+
+    <!-- Query Interface Connections (Bidirectional/Interactions) -->
+    <mxCell id="edge7" value="Tools / Reads Data" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;dashed=1;" edge="1" parent="1" source="query_interface" target="inventory_opt">
+      <mxGeometry relative="1" as="geometry"/>
+    </mxCell>
+    <mxCell id="edge8" value="Context" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=1;dashed=1;" edge="1" parent="1" source="query_interface" target="input_layer">
+      <mxGeometry relative="1" as="geometry">
+         <Array as="points">
+          <mxPoint x="140" y="520"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+    <mxCell id="edge9" value="Analyzes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;jettySize=auto;orthogonalLoop=1;html=1;exitX=1;exitY=0.5;entryX=0.5;entryY=1;dashed=1;" edge="1" parent="1" source="query_interface" target="output_layer">
+      <mxGeometry relative="1" as="geometry">
+        <Array as="points">
+          <mxPoint x="690" y="520"/>
+        </Array>
+      </mxGeometry>
+    </mxCell>
+
+  </root>
+</mxGraphModel>
