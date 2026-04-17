@@ -37,6 +37,10 @@ ai-enhanced-supply-chain/
 └── pyproject.toml                      # uv workspace root
 ```
 
+## Architecture
+
+![Architecture Diagram](docs/architecture.drawio.svg)
+
 ## Setup
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
