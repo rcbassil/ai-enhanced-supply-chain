@@ -12,7 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - `tests/test_inventory_optimization.py`: tests for allocation strategies and sustainability configuration.
   - `tests/test_routing_optimization.py`: verification of TSP heuristics and emission calculations.
 - **Test Configuration**: added `pytest.ini` at the workspace root to manage member paths and suppress `ortools` deprecation warnings.
-- **Development Dependencies**: added `pytest`, `pytest-mock`, and `matplotlib` to `pyproject.toml`.
+- **Development Dependencies**: added `pytest`, `pytest-mock`, `matplotlib`, `pre-commit`, and `ruff` to `pyproject.toml`.
+- **Pre-commit Integration**: added `.pre-commit-config.yaml` with hooks for linting, formatting, and automated testing.
+- **Ruff Configuration**: integrated `ruff` as the primary linter and formatter, with custom rules in `pyproject.toml`.
 
 ### Changed
 - **Dataset Path Decoupling**: refactored all pipeline modules (`demand-forecasting`, `inventory-optimization`, `routing-optimization`) to remove hardcoded file paths. Input and output paths are now dynamic and configurable.

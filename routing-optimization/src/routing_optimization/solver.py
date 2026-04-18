@@ -1,7 +1,8 @@
-import numpy as np
-import pandas as pd
 import json
 from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 DATA_DIR = Path(__file__).parents[3] / "data"
 DEFAULT_OUTPUT_CSV = DATA_DIR / "routing_optimization_results.csv"
@@ -64,7 +65,9 @@ def two_opt(route: list[int], matrix: np.ndarray) -> list[int]:
                     continue
                 candidate = best_route[:]
                 candidate[i:j] = best_route[i:j][::-1]
-                if calculate_total_distance(candidate, matrix) < calculate_total_distance(best_route, matrix):
+                if calculate_total_distance(candidate, matrix) < calculate_total_distance(
+                    best_route, matrix
+                ):
                     best_route = candidate
                     improved = True
     return best_route
@@ -77,8 +80,10 @@ def optimize(matrix: np.ndarray) -> tuple[list[int], float]:
     return optimized_route + [0], total_distance
 
 
-def run(matrix_paths: list[Path] = DEFAULT_DISTANCE_MATRICES, 
-        output_path: Path = DEFAULT_OUTPUT_CSV) -> None:
+def run(
+    matrix_paths: list[Path] = DEFAULT_DISTANCE_MATRICES,
+    output_path: Path = DEFAULT_OUTPUT_CSV,
+) -> None:
     config = load_sustainability_config()
     factor = config.get("shipping_emission_factor", 0.85)
 
@@ -96,13 +101,15 @@ def run(matrix_paths: list[Path] = DEFAULT_DISTANCE_MATRICES,
         print(f"\nTotal Distance {i}: {total_distance:.2f} km")
         print(f"Total Carbon Footprint {i}: {total_emissions:.2f} kg CO2")
 
-        rows.append({
-            "scenario": i,
-            "filename": path.name,
-            "sequence": sequence,
-            "total_distance": total_distance,
-            "total_emissions_kg": total_emissions
-        })
+        rows.append(
+            {
+                "scenario": i,
+                "filename": path.name,
+                "sequence": sequence,
+                "total_distance": total_distance,
+                "total_emissions_kg": total_emissions,
+            }
+        )
 
     pd.DataFrame(rows).to_csv(output_path, index=False)
     print(f"\nResults saved to '{output_path.name}'.")
@@ -110,12 +117,21 @@ def run(matrix_paths: list[Path] = DEFAULT_DISTANCE_MATRICES,
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(description="Routing Optimization Pipeline")
-    parser.add_argument("--inputs", type=str, nargs="+", 
-                        default=[str(p) for p in DEFAULT_DISTANCE_MATRICES],
-                        help="Path(s) to distance matrix CSV files")
-    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT_CSV), 
-                        help="Path to save routing results CSV")
+    parser.add_argument(
+        "--inputs",
+        type=str,
+        nargs="+",
+        default=[str(p) for p in DEFAULT_DISTANCE_MATRICES],
+        help="Path(s) to distance matrix CSV files",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=str(DEFAULT_OUTPUT_CSV),
+        help="Path to save routing results CSV",
+    )
     args = parser.parse_args()
-    
+
     run([Path(p) for p in args.inputs], Path(args.output))

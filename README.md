@@ -112,7 +112,7 @@ uv run routing-optimization
 uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_matrix_2.csv
 ```
 
-**Output:** 
+**Output:**
 - Optimized route sequence and total distance (km).
 - **Total Carbon Footprint** (kg CO2) per route based on shipping emission factors.
 - `data/routing_optimization_results.csv` including CO2 metrics.
@@ -140,7 +140,7 @@ uv run inventory-optimization
 uv run inventory-optimization --input data/my_data.csv --output1 res1.csv --output2 res2.csv
 ```
 
-**Output:** 
+**Output:**
 - `data/inventory_optimization_results_scenario_1.csv` (includes LP, Prop, and Carbon-Efficient metrics).
 - `data/inventory_optimization_results_scenario_2.csv`.
 

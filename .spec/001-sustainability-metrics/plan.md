@@ -17,7 +17,7 @@ Create a shared utility or helper within each module to load these configs. Sinc
 ## 3. Routing Optimization Updates
 Modify `routing-optimization/src/routing_optimization/solver.py`:
 - **New Logic**: Implement `calculate_emissions(distance: float, factor: float) -> float`.
-- **Output**: 
+- **Output**:
   - Print `Total Carbon Footprint (kg CO2)` to stdout.
   - Append `total_emissions_kg` to `routing_optimization_results.csv`.
 

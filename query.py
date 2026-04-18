@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Query the supply chain project with natural language using Claude."""
 
-import anthropic
 import json
 from pathlib import Path
+
+import anthropic
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -53,8 +54,9 @@ tools = [
         "name": "run_inventory_solver",
         "description": (
             "Run the inventory optimization solver and return fresh results. "
-            "Scenario 1: LP Max Revenue vs Proportional vs Carbon-Efficient allocation. "
-            "Scenario 2: 20% biased allocation (fairness-constrained LP)."
+            "Scenario 1: LP Max Revenue vs Proportional vs Carbon-Efficient "
+            "allocation. Scenario 2: 20% biased allocation "
+            "(fairness-constrained LP)."
         ),
         "input_schema": {
             "type": "object",
@@ -70,7 +72,10 @@ tools = [
     },
     {
         "name": "run_routing_solver",
-        "description": "Run the routing optimization solver to find the best sequence and calculate CO2 emissions.",
+        "description": (
+            "Run the routing optimization solver to find the best sequence "
+            "and calculate CO2 emissions."
+        ),
         "input_schema": {
             "type": "object",
             "properties": {},
@@ -95,6 +100,7 @@ def execute_tool(name: str, tool_input: dict) -> str:
             return f"File '{filename}' not found. Available files: {available}"
         try:
             import pandas as pd
+
             df = pd.read_csv(path)
             df.columns = df.columns.str.strip()
             return df.to_string(index=False)
@@ -105,47 +111,58 @@ def execute_tool(name: str, tool_input: dict) -> str:
         scenario = tool_input["scenario"]
         try:
             import sys
+
             sys.path.insert(0, str(Path(__file__).parent / "inventory-optimization" / "src"))
             from inventory_optimization.solver import (
-                solve_inventory_allocation,
-                solve_biased_allocation,
                 INPUT_CSV,
+                solve_biased_allocation,
+                solve_inventory_allocation,
             )
+
             if scenario == 1:
                 df = solve_inventory_allocation(INPUT_CSV)
-                cols = ["Product", "Price", 
-                        "LP_Max_Revenue_Stock", "Prop_Stock_LRM", "Carbon_Efficient_Stock",
-                        "LP_Revenue", "Carbon_Efficient_Revenue",
-                        "LP_Max_CO2", "Carbon_Efficient_CO2"]
+                cols = [
+                    "Product",
+                    "Price",
+                    "LP_Max_Revenue_Stock",
+                    "Prop_Stock_LRM",
+                    "Carbon_Efficient_Stock",
+                    "LP_Revenue",
+                    "Carbon_Efficient_Revenue",
+                    "LP_Max_CO2",
+                    "Carbon_Efficient_CO2",
+                ]
                 df_display = df[[c for c in cols if c in df.columns]]
-                
+
                 return (
                     df_display.to_string(index=False)
                     + f"\n\nTotal LP Max Revenue: ${df['LP_Revenue'].sum():,.2f}"
                     + f"\nTotal LP Max CO2: {df['LP_Max_CO2'].sum():,.2f} kg"
-                    + f"\n\nTotal Carbon-Efficient Revenue: ${df['Carbon_Efficient_Revenue'].sum():,.2f}"
+                    + "\n\nTotal Carbon-Efficient Revenue: "
+                    + f"${df['Carbon_Efficient_Revenue'].sum():,.2f}"
                     + f"\nTotal Carbon-Efficient CO2: {df['Carbon_Efficient_CO2'].sum():,.2f} kg"
                 )
             else:
                 df = solve_biased_allocation(INPUT_CSV, bias_pct=0.20)
                 total = df["Revenue"].sum()
-                return (
-                    df.to_string(index=False)
-                    + f"\n\nTotal Revenue (20% bias): ${total:,.2f}"
-                )
+                return df.to_string(index=False) + f"\n\nTotal Revenue (20% bias): ${total:,.2f}"
         except Exception as e:
             return f"Error running solver: {e}"
 
     elif name == "run_routing_solver":
         try:
             import sys
+
             sys.path.insert(0, str(Path(__file__).parent / "routing-optimization" / "src"))
-            from routing_optimization.solver import run as run_routing
-            # Note: The routing solver prints to stdout but also saves to routing_optimization_results.csv
+            # Note: The routing solver prints to stdout but also saves to
+            # routing_optimization_results.csv
             # We'll read the CSV for structured output
             from routing_optimization.solver import OUTPUT_CSV as ROUTING_CSV
+            from routing_optimization.solver import run as run_routing
+
             run_routing()
             import pandas as pd
+
             df = pd.read_csv(ROUTING_CSV)
             return df.to_string(index=False)
         except Exception as e:
@@ -183,11 +200,13 @@ def query(user_message: str, history: list[dict]) -> list[dict]:
                 if block.type == "tool_use":
                     print(f"\n[Tool: {block.name}({json.dumps(block.input)})]", flush=True)
                     result = execute_tool(block.name, block.input)
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": result,
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        }
+                    )
             history.append({"role": "user", "content": tool_results})
 
     return history
