@@ -51,6 +51,17 @@ Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 uv sync --all-packages
 ```
 
+## Testing
+
+The project uses `pytest` for automated testing.
+
+```bash
+# Run all tests
+uv run pytest
+```
+
+Tests cover demand forecasting, inventory allocation logic, routing optimization heuristics, and sustainability metric calculations.
+
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)

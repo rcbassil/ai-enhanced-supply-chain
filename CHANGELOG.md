@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Automated Testing Suite**: implemented a comprehensive test suite using `pytest`.
+  - `tests/test_demand_forecasting.py`: validation for data preprocessing and XGBoost model building.
+  - `tests/test_inventory_optimization.py`: tests for allocation strategies and sustainability configuration.
+  - `tests/test_routing_optimization.py`: verification of TSP heuristics and emission calculations.
+- **Test Configuration**: added `pytest.ini` at the workspace root to manage member paths and suppress `ortools` deprecation warnings.
+- **Development Dependencies**: added `pytest`, `pytest-mock`, and `matplotlib` to `pyproject.toml`.
+
 ### Changed
 - **Dataset Path Decoupling**: refactored all pipeline modules (`demand-forecasting`, `inventory-optimization`, `routing-optimization`) to remove hardcoded file paths. Input and output paths are now dynamic and configurable.
 - **Demand Forecasting**: removed `Demand Forecast` column from `data/retail_store_inventory.csv` and from model training. The dataset now includes richer features — `Inventory Level`, `Units Ordered`, `Price`, `Discount`, `Holiday/Promotion`, and `Competitor Pricing` — replacing the former forecast column.
