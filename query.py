@@ -2,11 +2,15 @@
 """Query the supply chain project with natural language using Claude."""
 
 import json
+import os
 from pathlib import Path
 
 import anthropic
 
 DATA_DIR = Path(__file__).parent / "data"
+
+if not os.environ.get("ANTHROPIC_API_KEY"):
+    raise EnvironmentError("ANTHROPIC_API_KEY environment variable is missing.")
 
 client = anthropic.Anthropic()
 
@@ -65,7 +69,11 @@ tools = [
                     "type": "integer",
                     "enum": [1, 2],
                     "description": "1 for LP Max/Prop/Carbon-Efficient, 2 for 20% biased allocation",
-                }
+                },
+                "capacity": {
+                    "type": "integer",
+                    "description": "Total stock capacity limit (default: 100)",
+                },
             },
             "required": ["scenario"],
         },
@@ -109,10 +117,8 @@ def execute_tool(name: str, tool_input: dict) -> str:
 
     elif name == "run_inventory_solver":
         scenario = tool_input["scenario"]
+        capacity = tool_input.get("capacity", 100)
         try:
-            import sys
-
-            sys.path.insert(0, str(Path(__file__).parent / "inventory-optimization" / "src"))
             from inventory_optimization.solver import (
                 INPUT_CSV,
                 solve_biased_allocation,
@@ -120,7 +126,7 @@ def execute_tool(name: str, tool_input: dict) -> str:
             )
 
             if scenario == 1:
-                df = solve_inventory_allocation(INPUT_CSV)
+                df = solve_inventory_allocation(INPUT_CSV, total_stock_limit=capacity)
                 cols = [
                     "Product",
                     "Price",
@@ -151,12 +157,6 @@ def execute_tool(name: str, tool_input: dict) -> str:
 
     elif name == "run_routing_solver":
         try:
-            import sys
-
-            sys.path.insert(0, str(Path(__file__).parent / "routing-optimization" / "src"))
-            # Note: The routing solver prints to stdout but also saves to
-            # routing_optimization_results.csv
-            # We'll read the CSV for structured output
             from routing_optimization.solver import OUTPUT_CSV as ROUTING_CSV
             from routing_optimization.solver import run as run_routing
 
