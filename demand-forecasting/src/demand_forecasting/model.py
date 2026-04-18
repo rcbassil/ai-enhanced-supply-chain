@@ -1,14 +1,15 @@
-import pandas as pd
-import numpy as np
-import xgboost as xgb
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, mean_squared_error
-import matplotlib.pyplot as plt
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
-INPUT_CSV = DATA_DIR / "retail_store_inventory.csv"
-OUTPUT_CSV = DATA_DIR / "retail_forecast_with_original_values.csv"
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.model_selection import train_test_split
+
+DATA_DIR = Path(__file__).parents[3] / "data"
+DEFAULT_INPUT_CSV = DATA_DIR / "retail_store_inventory.csv"
+DEFAULT_OUTPUT_CSV = DATA_DIR / "retail_forecast_with_original_values.csv"
 
 TEST_SIZE = 0.2
 N_ESTIMATORS = 100
@@ -17,7 +18,14 @@ MAX_DEPTH = 6
 PLOT_SAMPLE_SIZE = 100
 MAX_IMPORTANCE_FEATURES = 15
 
-CAT_COLS = ["Store ID", "Product ID", "Category", "Region", "Weather Condition", "Seasonality"]
+CAT_COLS = [
+    "Store ID",
+    "Product ID",
+    "Category",
+    "Region",
+    "Weather Condition",
+    "Seasonality",
+]
 TARGET = "Units Sold"
 
 
@@ -58,8 +66,21 @@ def evaluate(y_true: np.ndarray, y_pred: np.ndarray) -> None:
 
 def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegressor) -> None:
     plt.figure(figsize=(15, 7))
-    plt.plot(y_test[:PLOT_SAMPLE_SIZE], label="Actual Units Sold", color="#1f77b4", linewidth=2, marker="o")
-    plt.plot(predictions[:PLOT_SAMPLE_SIZE], label="XGBoost Forecast", color="#ff7f0e", linewidth=2, linestyle="--", marker="x")
+    plt.plot(
+        y_test[:PLOT_SAMPLE_SIZE],
+        label="Actual Units Sold",
+        color="#1f77b4",
+        linewidth=2,
+        marker="o",
+    )
+    plt.plot(
+        predictions[:PLOT_SAMPLE_SIZE],
+        label="XGBoost Forecast",
+        color="#ff7f0e",
+        linewidth=2,
+        linestyle="--",
+        marker="x",
+    )
     plt.title("Demand Forecasting: Actual vs Predicted (Sample)", fontsize=16)
     plt.xlabel("Time Step (Validation Set Data)", fontsize=12)
     plt.ylabel("Units Sold", fontsize=12)
@@ -70,15 +91,21 @@ def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegr
     plt.close()
 
     plt.figure(figsize=(10, 8))
-    xgb.plot_importance(model, max_num_features=MAX_IMPORTANCE_FEATURES, importance_type="weight", ax=plt.gca(), color="#2ca02c")
+    xgb.plot_importance(
+        model,
+        max_num_features=MAX_IMPORTANCE_FEATURES,
+        importance_type="weight",
+        ax=plt.gca(),
+        color="#2ca02c",
+    )
     plt.title("Key Drivers of Demand (Top 15 Features)", fontsize=16)
     plt.tight_layout()
     plt.savefig(DATA_DIR / "feature_importance.png")
     plt.close()
 
 
-def run() -> None:
-    df_original, df_ml = load_data(INPUT_CSV)
+def run(input_path: Path = DEFAULT_INPUT_CSV, output_path: Path = DEFAULT_OUTPUT_CSV) -> None:
+    df_original, df_ml = load_data(input_path)
 
     X = df_ml.drop(["Date"], axis=1)
     y = df_ml[TARGET]
@@ -94,11 +121,28 @@ def run() -> None:
     evaluate(y_test.values, test_predictions)
 
     df_original["Predicted_Demand_Forecast"] = model.predict(X)
-    df_original.to_csv(OUTPUT_CSV, index=False)
-    print(f"Process complete. '{OUTPUT_CSV.name}' created with original labels.")
+    df_original.to_csv(output_path, index=False)
+    print(f"Process complete. '{output_path.name}' created with original labels.")
 
     plot_results(y_test.values, test_predictions, model)
 
 
 if __name__ == "__main__":
-    run()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Demand Forecasting Pipeline")
+    parser.add_argument(
+        "--input",
+        type=str,
+        default=str(DEFAULT_INPUT_CSV),
+        help="Path to input dataset CSV",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=str(DEFAULT_OUTPUT_CSV),
+        help="Path to save forecast results CSV",
+    )
+    args = parser.parse_args()
+
+    run(Path(args.input), Path(args.output))

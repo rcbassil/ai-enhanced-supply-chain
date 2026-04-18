@@ -13,7 +13,8 @@ ai-enhanced-supply-chain/
 │   ├── inventory_optimization_results_scenario_1.csv     # Generated: LP vs proportional
 │   ├── inventory_optimization_results_scenario_2.csv     # Generated: biased allocation
 │   ├── distance_matrix_1.csv                    # Input: routing scenario 1
-│   └── distance_matrix_2.csv                    # Input: routing scenario 2
+│   ├── distance_matrix_2.csv                    # Input: routing scenario 2
+│   └── sustainability_config.json               # Input: emission factors and targets
 ├── demand-forecasting/
 │   ├── src/demand_forecasting/
 │   │   ├── __init__.py
@@ -50,6 +51,35 @@ Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 uv sync --all-packages
 ```
 
+## Testing
+
+The project uses `pytest` for automated testing.
+
+```bash
+# Run all tests
+uv run pytest
+```
+
+Tests cover demand forecasting, inventory allocation logic, routing optimization heuristics, and sustainability metric calculations.
+
+## Code Quality
+
+The project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, managed via [pre-commit](https://pre-commit.com/).
+
+### Pre-commit Hooks
+
+Hooks are configured to run automatically on every commit to ensure:
+- Code is formatted according to project standards.
+- Linting errors are identified and auto-fixed where possible.
+- All tests pass before a commit is finalized.
+
+To run hooks manually:
+```bash
+uv run pre-commit run --all-files
+```
+
+Ruff configuration (line length, rule selection) is located in `pyproject.toml`.
+
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)
@@ -70,9 +100,10 @@ Uses an XGBoost regressor to predict retail store demand (units sold) from histo
 **Run:**
 
 ```bash
+# Basic run
 uv run demand-forecasting
-# or
-uv run python -m demand_forecasting
+# Run with custom data path
+uv run demand-forecasting --input data/custom_inventory.csv
 ```
 
 **Output:** `data/retail_forecast_with_original_values.csv` + two matplotlib charts.
@@ -93,12 +124,16 @@ Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest
 **Run:**
 
 ```bash
+# Run with default matrices
 uv run routing-optimization
-# or
-uv run python -m routing_optimization
+# Run with specific matrix files
+uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_matrix_2.csv
 ```
 
-**Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
+**Output:**
+- Optimized route sequence and total distance (km).
+- **Total Carbon Footprint** (kg CO2) per route based on shipping emission factors.
+- `data/routing_optimization_results.csv` including CO2 metrics.
 
 ---
 
@@ -111,18 +146,33 @@ Allocates stock across products to maximise revenue under a total stock constrai
 **How it works:**
 
 1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
-2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
+2. **Carbon-Efficient** — part of Scenario 1, this LP allocation maximises revenue while capping total storage CO2 emissions at a threshold (configurable, default 85% of LP Max emissions).
+3. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
 
 **Run:**
 
 ```bash
-uv run demand-forecasting  # must run first
+# Run with defaults
 uv run inventory-optimization
-# or
-uv run python -m inventory_optimization
+# Run with custom input and outputs
+uv run inventory-optimization --input data/my_data.csv --output1 res1.csv --output2 res2.csv
 ```
 
-**Output:** `data/inventory_optimization_results_scenario_1.csv` and `data/inventory_optimization_results_scenario_2.csv`.
+**Output:**
+- `data/inventory_optimization_results_scenario_1.csv` (includes LP, Prop, and Carbon-Efficient metrics).
+- `data/inventory_optimization_results_scenario_2.csv`.
+
+---
+
+## GitHub Actions Pipeline
+
+The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline.yml`.
+
+- **Automated**: Runs on every `push` to `main` or `develop`.
+- **Manual Trigger**: Supports `workflow_dispatch` with custom inputs. You can trigger the pipeline from the GitHub UI and provide specific paths for each optimization stage.
+
+**Sequence:**
+`Demand Forecasting` ➔ `Inventory Optimization` ➔ `Routing Optimization`
 
 ---
 
@@ -132,7 +182,8 @@ An interactive CLI that lets you ask questions about the supply chain data and o
 
 **How it works:**
 
-- Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
+- Claude can call four tools: list data files, read CSVs, run the inventory solver (with CO2 data), or run the routing solver (with CO2 data).
+- Integrated with sustainability metrics from `data/sustainability_config.json`.
 - Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
 - Conversation is multi-turn — Claude remembers context within a session
 
@@ -151,7 +202,8 @@ uv run python query.py
 **Example questions:**
 
 - _"Which product generates the most revenue under LP max allocation?"_
-- _"How does proportional allocation compare to LP max — which products lose out?"_
+- _"How much CO2 do we save by switching to the Carbon-Efficient inventory scenario?"_
+- _"What is the total carbon footprint for Distance Matrix 1?"_
 - _"Explain the fairness tradeoff in the 20% biased scenario"_
 - _"Why does LP ignore P3 even though it has the highest demand?"_
 
