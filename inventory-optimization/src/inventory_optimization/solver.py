@@ -19,12 +19,11 @@ def load_sustainability_config() -> dict:
     return {"storage_emission_factor": 0.12, "emissions_target_reduction": 0.15}
 
 
-def solve_inventory_allocation(file_path):
+def solve_inventory_allocation(file_path, total_stock_limit=100):
     # Load the dataset
     df = pd.read_csv(file_path)
     df.columns = df.columns.str.strip()  # Clean column names
 
-    total_stock_limit = 100
     products = df["Product"].tolist()
     prices = df["Price"].tolist()
     demands = df["Predicted Demand Forecast"].tolist()
@@ -113,12 +112,11 @@ def solve_inventory_allocation(file_path):
     return df
 
 
-def solve_biased_allocation(file_path, bias_pct=0.20):
+def solve_biased_allocation(file_path, bias_pct=0.20, total_capacity=100):
     # Load Data
     df = pd.read_csv(file_path)
     df.columns = df.columns.str.strip()
 
-    total_capacity = 100
     total_demand = df["Predicted Demand Forecast"].sum()
 
     # Calculate Fair Share (100% Proportional baseline)
@@ -166,8 +164,9 @@ def run(
     input_path: Path = DEFAULT_INPUT_CSV,
     output_path_1: Path = DEFAULT_OUTPUT_CSV_1,
     output_path_2: Path = DEFAULT_OUTPUT_CSV_2,
+    stock_limit: int = 100,
 ) -> None:
-    results = solve_inventory_allocation(input_path)
+    results = solve_inventory_allocation(input_path, total_stock_limit=stock_limit)
 
     print("--- Allocation Comparison ---")
     print(
@@ -247,6 +246,7 @@ if __name__ == "__main__":
         default=str(DEFAULT_OUTPUT_CSV_2),
         help="Path to save scenario 2 results",
     )
+    parser.add_argument("--limit", type=int, default=100, help="Total stock capacity limit")
     args = parser.parse_args()
 
-    run(Path(args.input), Path(args.output1), Path(args.output2))
+    run(Path(args.input), Path(args.output1), Path(args.output2), stock_limit=args.limit)
