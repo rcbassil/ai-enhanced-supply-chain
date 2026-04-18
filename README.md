@@ -62,6 +62,24 @@ uv run pytest
 
 Tests cover demand forecasting, inventory allocation logic, routing optimization heuristics, and sustainability metric calculations.
 
+## Code Quality
+
+The project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, managed via [pre-commit](https://pre-commit.com/).
+
+### Pre-commit Hooks
+
+Hooks are configured to run automatically on every commit to ensure:
+- Code is formatted according to project standards.
+- Linting errors are identified and auto-fixed where possible.
+- All tests pass before a commit is finalized.
+
+To run hooks manually:
+```bash
+uv run pre-commit run --all-files
+```
+
+Ruff configuration (line length, rule selection) is located in `pyproject.toml`.
+
 ## Modules
 
 ### Demand Forecasting (`demand-forecasting/`)
