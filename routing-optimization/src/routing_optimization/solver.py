@@ -3,10 +3,10 @@ import pandas as pd
 import json
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
-OUTPUT_CSV = DATA_DIR / "routing_optimization_results.csv"
+DATA_DIR = Path(__file__).parents[3] / "data"
+DEFAULT_OUTPUT_CSV = DATA_DIR / "routing_optimization_results.csv"
 
-DISTANCE_MATRICES = [
+DEFAULT_DISTANCE_MATRICES = [
     DATA_DIR / "distance_matrix_1.csv",
     DATA_DIR / "distance_matrix_2.csv",
 ]
@@ -77,31 +77,45 @@ def optimize(matrix: np.ndarray) -> tuple[list[int], float]:
     return optimized_route + [0], total_distance
 
 
-def run() -> None:
+def run(matrix_paths: list[Path] = DEFAULT_DISTANCE_MATRICES, 
+        output_path: Path = DEFAULT_OUTPUT_CSV) -> None:
     config = load_sustainability_config()
     factor = config.get("shipping_emission_factor", 0.85)
 
     rows = []
-    for i, path in enumerate(DISTANCE_MATRICES, start=1):
+    for i, path in enumerate(matrix_paths, start=1):
+        if not path.exists():
+            print(f"Warning: File {path} not found. Skipping.")
+            continue
         matrix = load_matrix(path)
         sequence, total_distance = optimize(matrix)
         total_emissions = calculate_emissions(total_distance, factor)
 
-        print(f"\nDistance Matrix {i}: \n\n{matrix}")
+        print(f"\nDistance Matrix {i} ({path.name}): \n\n{matrix}")
         print(f"\nOptimized Sequence {i}: {sequence}")
         print(f"\nTotal Distance {i}: {total_distance:.2f} km")
         print(f"Total Carbon Footprint {i}: {total_emissions:.2f} kg CO2")
 
         rows.append({
             "scenario": i,
+            "filename": path.name,
             "sequence": sequence,
             "total_distance": total_distance,
             "total_emissions_kg": total_emissions
         })
 
-    pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
-    print(f"\nResults saved to '{OUTPUT_CSV.name}'.")
+    pd.DataFrame(rows).to_csv(output_path, index=False)
+    print(f"\nResults saved to '{output_path.name}'.")
 
 
 if __name__ == "__main__":
-    run()
+    import argparse
+    parser = argparse.ArgumentParser(description="Routing Optimization Pipeline")
+    parser.add_argument("--inputs", type=str, nargs="+", 
+                        default=[str(p) for p in DEFAULT_DISTANCE_MATRICES],
+                        help="Path(s) to distance matrix CSV files")
+    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT_CSV), 
+                        help="Path to save routing results CSV")
+    args = parser.parse_args()
+    
+    run([Path(p) for p in args.inputs], Path(args.output))

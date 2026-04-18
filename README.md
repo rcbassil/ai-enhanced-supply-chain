@@ -71,9 +71,10 @@ Uses an XGBoost regressor to predict retail store demand (units sold) from histo
 **Run:**
 
 ```bash
+# Basic run
 uv run demand-forecasting
-# or
-uv run python -m demand_forecasting
+# Run with custom data path
+uv run demand-forecasting --input data/custom_inventory.csv
 ```
 
 **Output:** `data/retail_forecast_with_original_values.csv` + two matplotlib charts.
@@ -94,9 +95,10 @@ Solves the Travelling Salesman Problem (TSP) for delivery routes using a Nearest
 **Run:**
 
 ```bash
+# Run with default matrices
 uv run routing-optimization
-# or
-uv run python -m routing_optimization
+# Run with specific matrix files
+uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_matrix_2.csv
 ```
 
 **Output:** 
@@ -121,15 +123,27 @@ Allocates stock across products to maximise revenue under a total stock constrai
 **Run:**
 
 ```bash
-uv run demand-forecasting  # must run first
+# Run with defaults
 uv run inventory-optimization
-# or
-uv run python -m inventory_optimization
+# Run with custom input and outputs
+uv run inventory-optimization --input data/my_data.csv --output1 res1.csv --output2 res2.csv
 ```
 
 **Output:** 
 - `data/inventory_optimization_results_scenario_1.csv` (includes LP, Prop, and Carbon-Efficient metrics).
 - `data/inventory_optimization_results_scenario_2.csv`.
+
+---
+
+## GitHub Actions Pipeline
+
+The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline.yml`.
+
+- **Automated**: Runs on every `push` to `main` or `develop`.
+- **Manual Trigger**: Supports `workflow_dispatch` with custom inputs. You can trigger the pipeline from the GitHub UI and provide specific paths for each optimization stage.
+
+**Sequence:**
+`Demand Forecasting` ➔ `Inventory Optimization` ➔ `Routing Optimization`
 
 ---
 

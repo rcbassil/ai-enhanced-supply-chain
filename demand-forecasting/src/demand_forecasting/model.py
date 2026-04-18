@@ -6,9 +6,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
-INPUT_CSV = DATA_DIR / "retail_store_inventory.csv"
-OUTPUT_CSV = DATA_DIR / "retail_forecast_with_original_values.csv"
+DATA_DIR = Path(__file__).parents[3] / "data"
+DEFAULT_INPUT_CSV = DATA_DIR / "retail_store_inventory.csv"
+DEFAULT_OUTPUT_CSV = DATA_DIR / "retail_forecast_with_original_values.csv"
 
 TEST_SIZE = 0.2
 N_ESTIMATORS = 100
@@ -77,8 +77,8 @@ def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegr
     plt.close()
 
 
-def run() -> None:
-    df_original, df_ml = load_data(INPUT_CSV)
+def run(input_path: Path = DEFAULT_INPUT_CSV, output_path: Path = DEFAULT_OUTPUT_CSV) -> None:
+    df_original, df_ml = load_data(input_path)
 
     X = df_ml.drop(["Date"], axis=1)
     y = df_ml[TARGET]
@@ -94,11 +94,17 @@ def run() -> None:
     evaluate(y_test.values, test_predictions)
 
     df_original["Predicted_Demand_Forecast"] = model.predict(X)
-    df_original.to_csv(OUTPUT_CSV, index=False)
-    print(f"Process complete. '{OUTPUT_CSV.name}' created with original labels.")
+    df_original.to_csv(output_path, index=False)
+    print(f"Process complete. '{output_path.name}' created with original labels.")
 
     plot_results(y_test.values, test_predictions, model)
 
 
 if __name__ == "__main__":
-    run()
+    import argparse
+    parser = argparse.ArgumentParser(description="Demand Forecasting Pipeline")
+    parser.add_argument("--input", type=str, default=str(DEFAULT_INPUT_CSV), help="Path to input dataset CSV")
+    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT_CSV), help="Path to save forecast results CSV")
+    args = parser.parse_args()
+    
+    run(Path(args.input), Path(args.output))

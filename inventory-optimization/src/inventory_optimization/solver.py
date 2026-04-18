@@ -4,10 +4,10 @@ import json
 from ortools.linear_solver import pywraplp
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
-INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
-OUTPUT_CSV_1 = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
-OUTPUT_CSV_2 = DATA_DIR / "inventory_optimization_results_scenario_2.csv"
+DATA_DIR = Path(__file__).parents[3] / "data"
+DEFAULT_INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
+DEFAULT_OUTPUT_CSV_1 = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
+DEFAULT_OUTPUT_CSV_2 = DATA_DIR / "inventory_optimization_results_scenario_2.csv"
 
 
 def load_sustainability_config() -> dict:
@@ -159,8 +159,10 @@ def solve_biased_allocation(file_path, bias_pct=0.20):
         return df[['Product', 'Price', 'Predicted Demand Forecast', 'Final_Stock', 'Revenue']]
 
 
-def run() -> None:
-    results = solve_inventory_allocation(INPUT_CSV)
+def run(input_path: Path = DEFAULT_INPUT_CSV, 
+        output_path_1: Path = DEFAULT_OUTPUT_CSV_1, 
+        output_path_2: Path = DEFAULT_OUTPUT_CSV_2) -> None:
+    results = solve_inventory_allocation(input_path)
 
     print("--- Allocation Comparison ---")
     print(results[['Product', 'Price', 'LP_Max_Revenue_Stock', 'Prop_Stock_LRM', 'Carbon_Efficient_Stock']])
@@ -179,12 +181,12 @@ def run() -> None:
         {"Product": "TOTAL (Proportional)", "Prop_Revenue": results["Prop_Revenue"].sum(), "Prop_CO2": results["Prop_CO2"].sum()},
         {"Product": "TOTAL (Carbon-Efficient)", "Carbon_Efficient_Revenue": results["Carbon_Efficient_Revenue"].sum(), "Carbon_Efficient_CO2": results["Carbon_Efficient_CO2"].sum()},
     ])
-    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV_1, index=False)
-    print(f"\nResults saved to '{OUTPUT_CSV_1.name}'.")
+    pd.concat([results, summary], ignore_index=True).to_csv(output_path_1, index=False)
+    print(f"\nResults saved to '{output_path_1.name}'.")
 
 
     # Run for 20% bias
-    results = solve_biased_allocation(INPUT_CSV, bias_pct=0.20)
+    results = solve_biased_allocation(input_path, bias_pct=0.20)
     print("\n--- 20% Bias Allocation ---")
     print(results[['Product', 'Price', 'Predicted Demand Forecast', 'Final_Stock', 'Revenue']])
     print(f"Total Revenue: ${results['Revenue'].sum():,.2f}")
@@ -193,8 +195,15 @@ def run() -> None:
         {"Product": "TOTAL Revenue", "Revenue": results["Revenue"].sum()}
     ])
 
-    pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV_2, index=False)
-    print(f"\nResults saved to '{OUTPUT_CSV_2.name}'.")
+    pd.concat([results, summary], ignore_index=True).to_csv(output_path_2, index=False)
+    print(f"\nResults saved to '{output_path_2.name}'.")
 
 if __name__ == "__main__":
-    run()
+    import argparse
+    parser = argparse.ArgumentParser(description="Inventory Optimization Pipeline")
+    parser.add_argument("--input", type=str, default=str(DEFAULT_INPUT_CSV), help="Path to input dataset CSV")
+    parser.add_argument("--output1", type=str, default=str(DEFAULT_OUTPUT_CSV_1), help="Path to save scenario 1 results")
+    parser.add_argument("--output2", type=str, default=str(DEFAULT_OUTPUT_CSV_2), help="Path to save scenario 2 results")
+    args = parser.parse_args()
+
+    run(Path(args.input), Path(args.output1), Path(args.output2))

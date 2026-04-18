@@ -7,13 +7,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- **Dataset Path Decoupling**: refactored all pipeline modules (`demand-forecasting`, `inventory-optimization`, `routing-optimization`) to remove hardcoded file paths. Input and output paths are now dynamic and configurable.
 - **Demand Forecasting**: removed `Demand Forecast` column from `data/retail_store_inventory.csv` and from model training. The dataset now includes richer features — `Inventory Level`, `Units Ordered`, `Price`, `Discount`, `Holiday/Promotion`, and `Competitor Pricing` — replacing the former forecast column.
 
 ### Added
+- **Command-Line Interface (CLI) Support**: all optimization pipelines now support standard command-line arguments (`--input`, `--output`) via `argparse`.
+  - Packages can be executed with custom paths: `uv run demand-forecasting --input path/to/data.csv`.
+  - Packages also support `python -m <package> --input ...` syntax with arguments handled in `__init__.py`.
+- **Dynamic GitHub Pipeline**: updated `.github/workflows/pipeline.yml` to support manual execution with custom dataset paths.
+  - Added `workflow_dispatch` with inputs for custom forecast, inventory, and routing data.
+  - Automatic fallback to default paths for triggered runs (push/pull request).
 - **Sustainability Metrics Integration**: introduced carbon footprint tracking across the supply chain.
   - New `data/sustainability_config.json` for managing global emission factors (shipping and storage) and reduction targets.
   - **Routing Carbon Tracking**: routing solver now calculates kg CO2 emissions based on optimized distance and persists results to `data/routing_optimization_results.csv`.
-  - **Carbon-Efficient Inventory Allocation**: new optimization scenario that maximizes revenue while capping total storage emissions at a user-defined threshold.
+  - **Carbon-Efficient Inventory Allocation**: new optimization scenario that maximizes revenue while capping total storage emissions at a threshold (configurable, default 85% of LP Max emissions).
   - Enhanced `query.py` with expanded toolset: added `run_routing_solver` and updated `run_inventory_solver` to return comprehensive carbon data to the AI assistant.
 - **Natural language query interface** (`query.py`): interactive CLI powered by Claude Opus 4.6 (Anthropic SDK) that lets users ask questions about supply chain data and optimization results in plain English.
   - Four tools available to Claude at runtime: `list_data_files`, `read_data_file`, `run_inventory_solver`, `run_routing_solver`.
