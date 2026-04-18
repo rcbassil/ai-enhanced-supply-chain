@@ -1,24 +1,22 @@
 name: Supply Chain Pipeline
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main]
   workflow_dispatch:
     inputs:
       forecast_input:
-        description: 'Input CSV for demand forecasting'
+        description: "Input CSV for demand forecasting"
         required: false
-        default: 'data/retail_store_inventory.csv'
+        default: "data/retail_store_inventory.csv"
       inventory_input:
-        description: 'Input CSV for inventory optimization (Scenario 1)'
+        description: "Input CSV for inventory optimization (Scenario 1)"
         required: false
-        default: 'data/inventory_s001_north_may_2022.csv'
+        default: "data/inventory_s001_north_may_2022.csv"
       routing_inputs:
-        description: 'Space-separated paths for routing optimization matrices'
+        description: "Space-separated paths for routing optimization matrices"
         required: false
-        default: 'data/distance_matrix_1.csv data/distance_matrix_2.csv'
+        default: "data/distance_matrix_1.csv data/distance_matrix_2.csv"
 
 jobs:
   demand-forecasting:
@@ -36,7 +34,8 @@ jobs:
         run: uv sync --all-packages
 
       - name: Run demand-forecasting
-        run: uv run demand-forecasting --input ${{ inputs.forecast_input || 'data/retail_store_inventory.csv' }}
+        run: uv run demand-forecasting --input ${{ inputs.forecast_input ||
+          'data/retail_store_inventory.csv' }}
         env:
           MPLBACKEND: Agg
 
@@ -71,7 +70,8 @@ jobs:
           path: data/
 
       - name: Run inventory-optimization
-        run: uv run inventory-optimization --input ${{ inputs.inventory_input || 'data/inventory_s001_north_may_2022.csv' }}
+        run: uv run inventory-optimization --input ${{ inputs.inventory_input ||
+          'data/inventory_s001_north_may_2022.csv' }}
 
       - name: Upload inventory output
         uses: actions/upload-artifact@v7
@@ -97,7 +97,8 @@ jobs:
         run: uv sync --all-packages
 
       - name: Run routing-optimization
-        run: uv run routing-optimization --inputs ${{ inputs.routing_inputs || 'data/distance_matrix_1.csv data/distance_matrix_2.csv' }}
+        run: uv run routing-optimization --inputs ${{ inputs.routing_inputs ||
+          'data/distance_matrix_1.csv data/distance_matrix_2.csv' }}
 
       - name: Upload routing output
         uses: actions/upload-artifact@v7
