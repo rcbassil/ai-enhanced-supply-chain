@@ -1,0 +1,5 @@
+{
+  "shipping_emission_factor": 0.85,
+  "storage_emission_factor": 0.12,
+  "emissions_target_reduction": 0.15
+}

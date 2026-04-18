@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import json
 from pathlib import Path
 
 DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
@@ -9,6 +10,19 @@ DISTANCE_MATRICES = [
     DATA_DIR / "distance_matrix_1.csv",
     DATA_DIR / "distance_matrix_2.csv",
 ]
+
+
+def load_sustainability_config() -> dict:
+    config_path = DATA_DIR / "sustainability_config.json"
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            return json.load(f)
+    return {"shipping_emission_factor": 0.85}
+
+
+def calculate_emissions(distance: float, factor: float) -> float:
+    """Calculate kg CO2 based on distance (km) and emission factor (kg/km)."""
+    return distance * factor
 
 
 def load_matrix(path: Path) -> np.ndarray:
@@ -64,14 +78,26 @@ def optimize(matrix: np.ndarray) -> tuple[list[int], float]:
 
 
 def run() -> None:
+    config = load_sustainability_config()
+    factor = config.get("shipping_emission_factor", 0.85)
+
     rows = []
     for i, path in enumerate(DISTANCE_MATRICES, start=1):
         matrix = load_matrix(path)
         sequence, total_distance = optimize(matrix)
+        total_emissions = calculate_emissions(total_distance, factor)
+
         print(f"\nDistance Matrix {i}: \n\n{matrix}")
         print(f"\nOptimized Sequence {i}: {sequence}")
-        print(f"\nTotal Distance {i}: {total_distance}")
-        rows.append({"scenario": i, "sequence": sequence, "total_distance": total_distance})
+        print(f"\nTotal Distance {i}: {total_distance:.2f} km")
+        print(f"Total Carbon Footprint {i}: {total_emissions:.2f} kg CO2")
+
+        rows.append({
+            "scenario": i,
+            "sequence": sequence,
+            "total_distance": total_distance,
+            "total_emissions_kg": total_emissions
+        })
 
     pd.DataFrame(rows).to_csv(OUTPUT_CSV, index=False)
     print(f"\nResults saved to '{OUTPUT_CSV.name}'.")

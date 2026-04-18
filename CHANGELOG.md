@@ -10,8 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Demand Forecasting**: removed `Demand Forecast` column from `data/retail_store_inventory.csv` and from model training. The dataset now includes richer features — `Inventory Level`, `Units Ordered`, `Price`, `Discount`, `Holiday/Promotion`, and `Competitor Pricing` — replacing the former forecast column.
 
 ### Added
+- **Sustainability Metrics Integration**: introduced carbon footprint tracking across the supply chain.
+  - New `data/sustainability_config.json` for managing global emission factors (shipping and storage) and reduction targets.
+  - **Routing Carbon Tracking**: routing solver now calculates kg CO2 emissions based on optimized distance and persists results to `data/routing_optimization_results.csv`.
+  - **Carbon-Efficient Inventory Allocation**: new optimization scenario that maximizes revenue while capping total storage emissions at a user-defined threshold.
+  - Enhanced `query.py` with expanded toolset: added `run_routing_solver` and updated `run_inventory_solver` to return comprehensive carbon data to the AI assistant.
 - **Natural language query interface** (`query.py`): interactive CLI powered by Claude Opus 4.6 (Anthropic SDK) that lets users ask questions about supply chain data and optimization results in plain English.
-  - Three tools available to Claude at runtime: `list_data_files`, `read_data_file`, `read_inventory_solver`.
+  - Four tools available to Claude at runtime: `list_data_files`, `read_data_file`, `run_inventory_solver`, `run_routing_solver`.
   - Streaming responses with adaptive thinking enabled.
   - Multi-turn conversation with `clear` and `exit` commands.
 - `anthropic>=0.50.0` added as a root workspace dependency in `pyproject.toml`.

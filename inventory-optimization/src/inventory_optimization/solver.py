@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import json
 from ortools.linear_solver import pywraplp
 from pathlib import Path
 
@@ -7,6 +8,14 @@ DATA_DIR = Path(__file__).parents[3] / "data"  # workspace root / data
 INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
 OUTPUT_CSV_1 = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
 OUTPUT_CSV_2 = DATA_DIR / "inventory_optimization_results_scenario_2.csv"
+
+
+def load_sustainability_config() -> dict:
+    config_path = DATA_DIR / "sustainability_config.json"
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            return json.load(f)
+    return {"storage_emission_factor": 0.12, "emissions_target_reduction": 0.15}
 
 def solve_inventory_allocation(file_path):
     # Load the dataset
@@ -64,9 +73,41 @@ def solve_inventory_allocation(file_path):
     df['LP_Max_Revenue_Stock'] = lp_results
     df['Prop_Stock_LRM'] = integer_parts
     
+    # Load Sustainability Config
+    config = load_sustainability_config()
+    storage_factor = config.get("storage_emission_factor", 0.12)
+    reduction_target = config.get("emissions_target_reduction", 0.15)
+    
     df['LP_Revenue'] = df['LP_Max_Revenue_Stock'] * df['Price']
     df['Prop_Revenue'] = df['Prop_Stock_LRM'] * df['Price']
     
+    # Calculate CO2 for existing scenarios
+    df['LP_Max_CO2'] = df['LP_Max_Revenue_Stock'] * storage_factor
+    df['Prop_CO2'] = df['Prop_Stock_LRM'] * storage_factor
+    
+    total_lp_co2 = df['LP_Max_CO2'].sum()
+    co2_cap = total_lp_co2 * (1 - reduction_target)
+    
+    # --- Carbon-Efficient Allocation ---
+    # Goal: Maximize revenue while capping CO2 at 85% of LP Max CO2
+    ce_solver = pywraplp.Solver.CreateSolver('GLOP')
+    if ce_solver:
+        ce_x = [ce_solver.NumVar(0, demands[i], f'ce_x_{i}') for i in range(num_products)]
+        ce_solver.Add(sum(ce_x) <= total_stock_limit)
+        # Carbon Cap Constraint
+        ce_solver.Add(sum(ce_x[i] * storage_factor for i in range(num_products)) <= co2_cap)
+        
+        ce_objective = ce_solver.Objective()
+        for i in range(num_products):
+            ce_objective.SetCoefficient(ce_x[i], prices[i])
+        ce_objective.SetMaximization()
+        
+        ce_status = ce_solver.Solve()
+        if ce_status == pywraplp.Solver.OPTIMAL:
+            df['Carbon_Efficient_Stock'] = [round(v.solution_value(), 2) for v in ce_x]
+            df['Carbon_Efficient_Revenue'] = df['Carbon_Efficient_Stock'] * df['Price']
+            df['Carbon_Efficient_CO2'] = df['Carbon_Efficient_Stock'] * storage_factor
+
     return df
 
 def solve_biased_allocation(file_path, bias_pct=0.20):
@@ -122,13 +163,21 @@ def run() -> None:
     results = solve_inventory_allocation(INPUT_CSV)
 
     print("--- Allocation Comparison ---")
-    print(results[['Product', 'Price', 'Predicted Demand Forecast', 'LP_Max_Revenue_Stock', 'Prop_Stock_LRM']])
+    print(results[['Product', 'Price', 'LP_Max_Revenue_Stock', 'Prop_Stock_LRM', 'Carbon_Efficient_Stock']])
+    
     print(f"\nTotal Revenue (LP Max): ${results['LP_Revenue'].sum():,.2f}")
-    print(f"Total Revenue (Proportional): ${results['Prop_Revenue'].sum():,.2f}")
+    print(f"Total CO2 (LP Max): {results['LP_Max_CO2'].sum():,.2f} kg")
+    
+    print(f"\nTotal Revenue (Carbon-Efficient): ${results['Carbon_Efficient_Revenue'].sum():,.2f}")
+    print(f"Total CO2 (Carbon-Efficient): {results['Carbon_Efficient_CO2'].sum():,.2f} kg")
+
+    print(f"\nTotal Revenue (Proportional): ${results['Prop_Revenue'].sum():,.2f}")
+    print(f"Total CO2 (Proportional): {results['Prop_CO2'].sum():,.2f} kg")
 
     summary = pd.DataFrame([
-        {"Product": "TOTAL (LP Max)", "LP_Revenue": results["LP_Revenue"].sum()},
-        {"Product": "TOTAL (Proportional)", "Prop_Revenue": results["Prop_Revenue"].sum()},
+        {"Product": "TOTAL (LP Max)", "LP_Revenue": results["LP_Revenue"].sum(), "LP_Max_CO2": results["LP_Max_CO2"].sum()},
+        {"Product": "TOTAL (Proportional)", "Prop_Revenue": results["Prop_Revenue"].sum(), "Prop_CO2": results["Prop_CO2"].sum()},
+        {"Product": "TOTAL (Carbon-Efficient)", "Carbon_Efficient_Revenue": results["Carbon_Efficient_Revenue"].sum(), "Carbon_Efficient_CO2": results["Carbon_Efficient_CO2"].sum()},
     ])
     pd.concat([results, summary], ignore_index=True).to_csv(OUTPUT_CSV_1, index=False)
     print(f"\nResults saved to '{OUTPUT_CSV_1.name}'.")

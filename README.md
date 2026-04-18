@@ -13,7 +13,8 @@ ai-enhanced-supply-chain/
 │   ├── inventory_optimization_results_scenario_1.csv     # Generated: LP vs proportional
 │   ├── inventory_optimization_results_scenario_2.csv     # Generated: biased allocation
 │   ├── distance_matrix_1.csv                    # Input: routing scenario 1
-│   └── distance_matrix_2.csv                    # Input: routing scenario 2
+│   ├── distance_matrix_2.csv                    # Input: routing scenario 2
+│   └── sustainability_config.json               # Input: emission factors and targets
 ├── demand-forecasting/
 │   ├── src/demand_forecasting/
 │   │   ├── __init__.py
@@ -98,7 +99,10 @@ uv run routing-optimization
 uv run python -m routing_optimization
 ```
 
-**Output:** Optimized route sequence and total distance printed to stdout for each distance matrix.
+**Output:** 
+- Optimized route sequence and total distance (km).
+- **Total Carbon Footprint** (kg CO2) per route based on shipping emission factors.
+- `data/routing_optimization_results.csv` including CO2 metrics.
 
 ---
 
@@ -111,7 +115,8 @@ Allocates stock across products to maximise revenue under a total stock constrai
 **How it works:**
 
 1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
-2. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
+2. **Carbon-Efficient** — part of Scenario 1, this LP allocation maximises revenue while capping total storage CO2 emissions at a threshold (configurable, default 85% of LP Max emissions).
+3. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
 
 **Run:**
 
@@ -122,7 +127,9 @@ uv run inventory-optimization
 uv run python -m inventory_optimization
 ```
 
-**Output:** `data/inventory_optimization_results_scenario_1.csv` and `data/inventory_optimization_results_scenario_2.csv`.
+**Output:** 
+- `data/inventory_optimization_results_scenario_1.csv` (includes LP, Prop, and Carbon-Efficient metrics).
+- `data/inventory_optimization_results_scenario_2.csv`.
 
 ---
 
@@ -132,7 +139,8 @@ An interactive CLI that lets you ask questions about the supply chain data and o
 
 **How it works:**
 
-- Claude can call three tools at runtime: list data files, read any CSV, or run the inventory solver fresh
+- Claude can call four tools: list data files, read CSVs, run the inventory solver (with CO2 data), or run the routing solver (with CO2 data).
+- Integrated with sustainability metrics from `data/sustainability_config.json`.
 - Responses stream token-by-token; adaptive thinking is enabled for complex reasoning
 - Conversation is multi-turn — Claude remembers context within a session
 
@@ -151,7 +159,8 @@ uv run python query.py
 **Example questions:**
 
 - _"Which product generates the most revenue under LP max allocation?"_
-- _"How does proportional allocation compare to LP max — which products lose out?"_
+- _"How much CO2 do we save by switching to the Carbon-Efficient inventory scenario?"_
+- _"What is the total carbon footprint for Distance Matrix 1?"_
 - _"Explain the fairness tradeoff in the 20% biased scenario"_
 - _"Why does LP ignore P3 even though it has the highest demand?"_
 

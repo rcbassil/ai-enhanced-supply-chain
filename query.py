@@ -10,18 +10,20 @@ DATA_DIR = Path(__file__).parent / "data"
 client = anthropic.Anthropic()
 
 SYSTEM_PROMPT = """You are an AI assistant for an AI-enhanced supply chain project.
-The project uses linear programming (OR-Tools) to optimize inventory allocation across products.
+The project uses linear programming (OR-Tools) to optimize inventory allocation and routing.
 
-You have access to tools that let you read CSV data files and run the optimization solver.
+You have access to tools that let you read CSV data files and run optimization solvers.
 
 Key concepts:
-- LP Max Revenue: allocates stock to maximize total revenue (concentrates on high-price items)
-- Proportional (LRM): allocates stock proportionally to demand forecasts using the Largest Remainder Method
-- Biased Allocation: LP optimization with a fairness constraint — each product gets at least 80% of its fair share
+- LP Max Revenue: maximizes total revenue (concentrates on high-price items).
+- Proportional (LRM): allocates stock proportionally to demand forecasts.
+- Carbon-Efficient Allocation: maximizes revenue while capping total CO2 emissions (storage carbon).
+- Routing Optimization: calculates the shortest distance and carbon footprint (shipping carbon) for deliveries.
 
 The data covers Store S001 North, May 2022. Total stock limit is 100 units.
+Emission factors are configurable in `data/sustainability_config.json`.
 
-When answering, use the tools to fetch real data rather than guessing."""
+When answering, use the tools to fetch real data and compare sustainability metrics when asked."""
 
 tools = [
     {
@@ -51,7 +53,7 @@ tools = [
         "name": "run_inventory_solver",
         "description": (
             "Run the inventory optimization solver and return fresh results. "
-            "Scenario 1: LP Max Revenue vs Proportional allocation. "
+            "Scenario 1: LP Max Revenue vs Proportional vs Carbon-Efficient allocation. "
             "Scenario 2: 20% biased allocation (fairness-constrained LP)."
         ),
         "input_schema": {
@@ -60,10 +62,19 @@ tools = [
                 "scenario": {
                     "type": "integer",
                     "enum": [1, 2],
-                    "description": "1 for LP Max vs Proportional, 2 for 20% biased allocation",
+                    "description": "1 for LP Max/Prop/Carbon-Efficient, 2 for 20% biased allocation",
                 }
             },
             "required": ["scenario"],
+        },
+    },
+    {
+        "name": "run_routing_solver",
+        "description": "Run the routing optimization solver to find the best sequence and calculate CO2 emissions.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
         },
     },
 ]
@@ -102,16 +113,18 @@ def execute_tool(name: str, tool_input: dict) -> str:
             )
             if scenario == 1:
                 df = solve_inventory_allocation(INPUT_CSV)
-                cols = ["Product", "Price", "Predicted Demand Forecast",
-                        "LP_Max_Revenue_Stock", "Prop_Stock_LRM",
-                        "LP_Revenue", "Prop_Revenue"]
+                cols = ["Product", "Price", 
+                        "LP_Max_Revenue_Stock", "Prop_Stock_LRM", "Carbon_Efficient_Stock",
+                        "LP_Revenue", "Carbon_Efficient_Revenue",
+                        "LP_Max_CO2", "Carbon_Efficient_CO2"]
                 df_display = df[[c for c in cols if c in df.columns]]
-                total_lp = df["LP_Revenue"].sum()
-                total_prop = df["Prop_Revenue"].sum()
+                
                 return (
                     df_display.to_string(index=False)
-                    + f"\n\nTotal LP Max Revenue: ${total_lp:,.2f}"
-                    + f"\nTotal Proportional Revenue: ${total_prop:,.2f}"
+                    + f"\n\nTotal LP Max Revenue: ${df['LP_Revenue'].sum():,.2f}"
+                    + f"\nTotal LP Max CO2: {df['LP_Max_CO2'].sum():,.2f} kg"
+                    + f"\n\nTotal Carbon-Efficient Revenue: ${df['Carbon_Efficient_Revenue'].sum():,.2f}"
+                    + f"\nTotal Carbon-Efficient CO2: {df['Carbon_Efficient_CO2'].sum():,.2f} kg"
                 )
             else:
                 df = solve_biased_allocation(INPUT_CSV, bias_pct=0.20)
@@ -122,6 +135,21 @@ def execute_tool(name: str, tool_input: dict) -> str:
                 )
         except Exception as e:
             return f"Error running solver: {e}"
+
+    elif name == "run_routing_solver":
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent / "routing-optimization" / "src"))
+            from routing_optimization.solver import run as run_routing
+            # Note: The routing solver prints to stdout but also saves to routing_optimization_results.csv
+            # We'll read the CSV for structured output
+            from routing_optimization.solver import OUTPUT_CSV as ROUTING_CSV
+            run_routing()
+            import pandas as pd
+            df = pd.read_csv(ROUTING_CSV)
+            return df.to_string(index=False)
+        except Exception as e:
+            return f"Error running routing solver: {e}"
 
     return f"Unknown tool: {name}"
 
