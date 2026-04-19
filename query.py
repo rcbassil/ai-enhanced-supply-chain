@@ -25,7 +25,9 @@ Key concepts:
 - Carbon-Efficient Allocation: maximizes revenue while capping total CO2 emissions (storage carbon).
 - Routing Optimization: calculates the shortest distance and carbon footprint (shipping carbon) for deliveries.
 
-The data covers Store S001 North, May 2022. Total stock limit is 100 units.
+Default input is the demand forecast output (monthly aggregation, limit 500).
+inventory_s001_north_may_2022.csv uses weekly aggregation and limit 100.
+Aggregation period (month/week) and capacity limit are overridable per solver call.
 Emission factors are configurable in `data/sustainability_config.json`.
 
 When answering, use the tools to fetch real data and compare sustainability metrics when asked."""
@@ -86,6 +88,11 @@ tools = [
                     "type": "string",
                     "description": "Date prefix to filter (e.g. 2022-05)",
                 },
+                "period": {
+                    "type": "string",
+                    "enum": ["month", "week"],
+                    "description": "Aggregation period for date-based inputs (default: month)",
+                },
             },
             "required": ["scenario"],
         },
@@ -134,10 +141,17 @@ def execute_tool(name: str, tool_input: dict) -> str:
     elif name == "run_inventory_solver":
         scenario = tool_input["scenario"]
         capacity = tool_input.get("capacity", 500)
+        if not isinstance(capacity, int) or capacity <= 0:
+            return f"Invalid capacity '{capacity}': must be a positive integer."
+        period = tool_input.get("period", "month")
         filters = {
-            "store": tool_input.get("store"),
-            "region": tool_input.get("region"),
-            "date_filter": tool_input.get("date"),
+            k: v
+            for k, v in {
+                "store": tool_input.get("store"),
+                "region": tool_input.get("region"),
+                "date_filter": tool_input.get("date"),
+            }.items()
+            if v is not None
         }
         try:
             from inventory_optimization.solver import (
@@ -155,7 +169,9 @@ def execute_tool(name: str, tool_input: dict) -> str:
             )
 
             if scenario == 1:
-                df = solve_inventory_allocation(input_file, total_stock_limit=capacity, **filters)
+                df = solve_inventory_allocation(
+                    input_file, total_stock_limit=capacity, period=period, **filters
+                )
                 cols = [
                     "Product",
                     "Price",
@@ -178,7 +194,9 @@ def execute_tool(name: str, tool_input: dict) -> str:
                     + f"\nTotal Carbon-Efficient CO2: {df['Carbon_Efficient_CO2'].sum():,.2f} kg"
                 )
             else:
-                df = solve_biased_allocation(input_file, total_capacity=capacity, **filters)
+                df = solve_biased_allocation(
+                    input_file, total_capacity=capacity, period=period, **filters
+                )
                 total = df["Revenue"].sum()
                 return df.to_string(index=False) + f"\n\nTotal Revenue (20% bias): ${total:,.2f}"
         except Exception as e:
@@ -206,7 +224,7 @@ def query(user_message: str, history: list[dict]) -> list[dict]:
 
     while True:
         with client.messages.stream(
-            model="claude-opus-4-6",
+            model="claude-opus-4-7",
             max_tokens=int(os.environ.get("CLAUDE_MAX_TOKENS", "4096")),
             thinking={"type": "adaptive"},
             system=SYSTEM_PROMPT,

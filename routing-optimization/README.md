@@ -27,7 +27,11 @@ TSP solver for delivery route optimization using a Nearest Neighbor construction
 From the workspace root:
 
 ```bash
-uv run routing-optimization --inputs data/matrix_1.csv data/matrix_2.csv
+# Default: runs both distance matrices
+uv run routing-optimization
+
+# Custom matrix files
+uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_matrix_2.csv
 ```
 
 ## Package structure

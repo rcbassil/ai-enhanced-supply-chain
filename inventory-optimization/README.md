@@ -1,10 +1,10 @@
 # inventory-optimization
 
-Inventory allocation module using Linear Programming (LP) and Proportional Allocation to maximize revenue under a stock constraint. It is fully integrated with the Demand Forecasting module and supports **Monthly Batch Optimization** over multi-period datasets.
+Inventory allocation module using Linear Programming (LP) and Proportional Allocation to maximize revenue under a stock constraint. It is fully integrated with the Demand Forecasting module and supports **Period-Based Batch Optimization** (monthly or weekly) over multi-period datasets.
 
 ## How it works
 
-The solver automatically processes multi-period datasets (e.g., multi-year forecasts) by grouping data by `Month` and running independent optimization cycles for each period.
+The solver automatically processes multi-period datasets (e.g., multi-year forecasts) by grouping data by `Month` or `Week` and running independent optimization cycles for each period.
 
 **Scenario 1 — Fair vs. Optimal** (`solve_inventory_allocation`):
 
@@ -26,20 +26,23 @@ The solver automatically processes multi-period datasets (e.g., multi-year forec
 uv run demand-forecasting
 ```
 
-### Supported CLI Filters
-
-The module supports dynamic filtering via CLI:
+### Supported CLI Flags
 
 | Argument | Description |
 |---|---|
-| `--limit` | Total stock capacity per month (default: 500) |
+| `--limit` | Total stock capacity per period (default: 100 for `inventory_s001_north_may_2022.csv`, 500 otherwise) |
+| `--period` | Aggregation period: `month` or `week` (default: `week` for `inventory_s001_north_may_2022.csv`, `month` otherwise) |
 | `--store` | Filter by Store ID (e.g., S001) |
 | `--region` | Filter by Region (e.g., North) |
-| `--date` | Filter by specific Date (e.g., 2022-05-01) |
+| `--date` | Filter by date prefix (e.g., 2022-05) |
+
+### Input auto-detection
+
+The default input is `data/retail_forecast_with_original_values.csv` (monthly, limit 500). When `--input data/inventory_s001_north_may_2022.csv` is passed, `--period` and `--limit` automatically default to `week` and `100` respectively — no extra flags needed.
 
 ## Output
 
-Monthly results are concatenated into the final output files:
+Per-period results are concatenated into the final output files:
 
 **`data/inventory_optimization_results_scenario_1.csv`**:
 - Includes `LP_Max_Revenue_Stock`, `Prop_Stock_LRM`, and `Carbon_Efficient_Stock`.
@@ -53,7 +56,14 @@ Monthly results are concatenated into the final output files:
 From the workspace root:
 
 ```bash
-uv run inventory-optimization --limit 500 --region North
+# Default: forecast output, monthly aggregation, limit 500
+uv run inventory-optimization
+
+# Weekly store-specific file (auto-applies week + limit 100)
+uv run inventory-optimization --input data/inventory_s001_north_may_2022.csv
+
+# Override period and limit explicitly
+uv run inventory-optimization --period week --limit 200 --region North
 ```
 
 ## Package structure

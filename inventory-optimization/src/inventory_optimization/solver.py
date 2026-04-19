@@ -6,9 +6,13 @@ import pandas as pd
 from ortools.linear_solver import pywraplp
 
 DATA_DIR = Path(__file__).parents[3] / "data"
-DEFAULT_INPUT_CSV = DATA_DIR / "inventory_s001_north_may_2022.csv"
+DEFAULT_INPUT_CSV = DATA_DIR / "retail_forecast_with_original_values.csv"
 DEFAULT_OUTPUT_CSV_1 = DATA_DIR / "inventory_optimization_results_scenario_1.csv"
 DEFAULT_OUTPUT_CSV_2 = DATA_DIR / "inventory_optimization_results_scenario_2.csv"
+
+_INPUT_DEFAULTS: dict[str, dict] = {
+    "inventory_s001_north_may_2022.csv": {"period": "week", "stock_limit": 100},
+}
 
 
 def load_sustainability_config() -> dict:
@@ -20,7 +24,11 @@ def load_sustainability_config() -> dict:
 
 
 def preprocess_input(
-    df: pd.DataFrame, store: str = None, region: str = None, date_filter: str = None
+    df: pd.DataFrame,
+    store: str = None,
+    region: str = None,
+    date_filter: str = None,
+    period: str = "month",
 ) -> pd.DataFrame:
     """Detects and transforms forecast module output into solver-ready format."""
     df.columns = df.columns.str.strip()
@@ -33,11 +41,16 @@ def preprocess_input(
         if date_filter:
             df = df[df["Date"].str.startswith(date_filter)]
 
-        # Group by Month if Date exists
         groupby_cols = ["Product ID"]
+        period_col = None
         if "Date" in df.columns:
-            df["Month"] = pd.to_datetime(df["Date"]).dt.to_period("M").astype(str)
-            groupby_cols.append("Month")
+            if period == "week":
+                df["Week"] = pd.to_datetime(df["Date"]).dt.to_period("W").astype(str)
+                period_col = "Week"
+            else:
+                df["Month"] = pd.to_datetime(df["Date"]).dt.to_period("M").astype(str)
+                period_col = "Month"
+            groupby_cols.append(period_col)
 
         df = (
             df.groupby(groupby_cols)
@@ -45,22 +58,25 @@ def preprocess_input(
             .reset_index()
         )
 
-        # Mapping to solver columns
-        if "Month" in df.columns:
-            df.columns = ["Product", "Month", "Price", "Predicted Demand Forecast"]
+        if period_col:
+            df.columns = ["Product", period_col, "Price", "Predicted Demand Forecast"]
         else:
             df.columns = ["Product", "Price", "Predicted Demand Forecast"]
 
     return df
 
 
-def solve_inventory_allocation(df, total_stock_limit=500):
+def solve_inventory_allocation(
+    df, total_stock_limit=500, period="month", store=None, region=None, date_filter=None
+):
     if total_stock_limit <= 0:
         raise ValueError(f"total_stock_limit must be a positive integer, got {total_stock_limit}")
     # If a path was passed instead of a DataFrame, load it
     if isinstance(df, (str, Path)):
         df = pd.read_csv(df)
-        df = preprocess_input(df)
+        df = preprocess_input(
+            df, store=store, region=region, date_filter=date_filter, period=period
+        )
 
     products = df["Product"].tolist()
     prices = df["Price"].tolist()
@@ -70,7 +86,7 @@ def solve_inventory_allocation(df, total_stock_limit=500):
     # Revenue Maximization (Linear Programming via OR-Tools)
     solver = pywraplp.Solver.CreateSolver("GLOP")
     if not solver:
-        return
+        raise RuntimeError("Failed to create GLOP solver for inventory allocation")
 
     # Variables: x[i] is the number of units of product i to stock
     x = [solver.NumVar(0, demands[i], f"x_{i}") for i in range(num_products)]
@@ -86,13 +102,14 @@ def solve_inventory_allocation(df, total_stock_limit=500):
 
     status = solver.Solve()
 
-    lp_results = []
+    lp_results = [np.nan] * num_products
     if status == pywraplp.Solver.OPTIMAL:
-        for i in range(num_products):
-            lp_results.append(round(x[i].solution_value(), 2))
+        lp_results = [round(x[i].solution_value(), 2) for i in range(num_products)]
 
     # Proportional Allocation (Largest Remainder Method)
     total_demand = sum(demands)
+    if total_demand <= 0:
+        raise ValueError("Total demand must be positive")
     # Calculate exact quotas
     exact_quotas = [(d / total_demand) * total_stock_limit for d in demands]
 
@@ -101,7 +118,7 @@ def solve_inventory_allocation(df, total_stock_limit=500):
     remainders = [q - i for q, i in zip(exact_quotas, integer_parts, strict=True)]
 
     # Distribute remaining units to those with largest remainders
-    leftover = total_stock_limit - sum(integer_parts)
+    leftover = max(0, total_stock_limit - sum(integer_parts))
     # Get indices of sorted remainders (descending)
     top_indices = np.argsort(remainders)[::-1][:leftover]
 
@@ -129,6 +146,10 @@ def solve_inventory_allocation(df, total_stock_limit=500):
 
     # --- Carbon-Efficient Allocation ---
     # Goal: Maximize revenue while capping CO2 at 85% of LP Max CO2
+    df["Carbon_Efficient_Stock"] = np.nan
+    df["Carbon_Efficient_Revenue"] = np.nan
+    df["Carbon_Efficient_CO2"] = np.nan
+
     ce_solver = pywraplp.Solver.CreateSolver("GLOP")
     if ce_solver:
         ce_x = [ce_solver.NumVar(0, demands[i], f"ce_x_{i}") for i in range(num_products)]
@@ -141,10 +162,6 @@ def solve_inventory_allocation(df, total_stock_limit=500):
             ce_objective.SetCoefficient(ce_x[i], prices[i])
         ce_objective.SetMaximization()
 
-        df["Carbon_Efficient_Stock"] = np.nan
-        df["Carbon_Efficient_Revenue"] = np.nan
-        df["Carbon_Efficient_CO2"] = np.nan
-
         ce_status = ce_solver.Solve()
         if ce_status == pywraplp.Solver.OPTIMAL:
             df["Carbon_Efficient_Stock"] = [round(v.solution_value(), 2) for v in ce_x]
@@ -154,22 +171,30 @@ def solve_inventory_allocation(df, total_stock_limit=500):
     return df
 
 
-def solve_biased_allocation(df, bias_pct=0.20, total_capacity=500):
+def solve_biased_allocation(
+    df, bias_pct=0.20, total_capacity=500, period="month", store=None, region=None, date_filter=None
+):
     # If a path was passed instead of a DataFrame, load it
     if isinstance(df, (str, Path)):
         df = pd.read_csv(df)
-        df = preprocess_input(df)
+        df = preprocess_input(
+            df, store=store, region=region, date_filter=date_filter, period=period
+        )
 
     total_demand = df["Predicted Demand Forecast"].sum()
+    if total_demand <= 0:
+        raise ValueError("Total demand must be positive")
 
     # Calculate Fair Share (100% Proportional baseline)
     df["Fair_Share"] = (df["Predicted Demand Forecast"] / total_demand) * total_capacity
 
     # Setup Linear Programming Solver (OR-Tools)
     solver = pywraplp.Solver.CreateSolver("GLOP")
+    if not solver:
+        raise RuntimeError("Failed to create GLOP solver for biased allocation")
     stocks = []
 
-    for _idx, (i, row) in enumerate(df.iterrows()):
+    for i, row in df.iterrows():
         # Constraint: Must receive at least (1 - bias) of the Fair Share
         lower_bound = row["Fair_Share"] * (1 - bias_pct)
         # Constraint: Cannot exceed forecasted demand
@@ -187,46 +212,58 @@ def solve_biased_allocation(df, bias_pct=0.20, total_capacity=500):
 
     status = solver.Solve()
 
-    if status == pywraplp.Solver.OPTIMAL:
-        df["Optimized_Float"] = [s.solution_value() for s in stocks]
+    if status != pywraplp.Solver.OPTIMAL:
+        raise RuntimeError(f"Biased allocation solver did not reach OPTIMAL (status={status})")
 
-        # Largest Remainder Method (Integer Rounding)
-        df["Final_Stock"] = df["Optimized_Float"].apply(np.floor).astype(int)
-        df["Remainder"] = df["Optimized_Float"] - df["Final_Stock"]
+    df["Optimized_Float"] = [s.solution_value() for s in stocks]
 
-        leftover = total_capacity - df["Final_Stock"].sum()
-        top_indices = df.sort_values(by="Remainder", ascending=False).head(int(leftover)).index
-        df.loc[top_indices, "Final_Stock"] += 1
+    # Largest Remainder Method (Integer Rounding)
+    df["Final_Stock"] = df["Optimized_Float"].apply(np.floor).astype(int)
+    df["Remainder"] = df["Optimized_Float"] - df["Final_Stock"]
 
-        # Final Metrics
-        df["Revenue"] = df["Final_Stock"] * df["Price"]
-        return df[["Product", "Price", "Predicted Demand Forecast", "Final_Stock", "Revenue"]]
+    leftover = max(0, total_capacity - df["Final_Stock"].sum())
+    top_indices = df.sort_values(by="Remainder", ascending=False).head(int(leftover)).index
+    df.loc[top_indices, "Final_Stock"] += 1
+
+    # Final Metrics
+    df["Revenue"] = df["Final_Stock"] * df["Price"]
+    return df[["Product", "Price", "Predicted Demand Forecast", "Final_Stock", "Revenue"]]
 
 
 def run(
     input_path: Path = DEFAULT_INPUT_CSV,
     output_path_1: Path = DEFAULT_OUTPUT_CSV_1,
     output_path_2: Path = DEFAULT_OUTPUT_CSV_2,
-    stock_limit: int = 500,
+    stock_limit: int | None = None,
+    period: str | None = None,
     **filters,
 ) -> None:
+    defaults = _INPUT_DEFAULTS.get(Path(input_path).name, {})
+    if period is None:
+        period = defaults.get("period", "month")
+    if stock_limit is None:
+        stock_limit = defaults.get("stock_limit", 500)
+
     # 1. Load and initial preprocess
     df_raw = pd.read_csv(input_path)
-    df_pre = preprocess_input(df_raw, **filters)
+    df_pre = preprocess_input(df_raw, period=period, **filters)
 
-    # 2. Sequential optimization per Month (if multi-period)
-    if "Month" in df_pre.columns:
-        months = sorted(df_pre["Month"].unique())
+    # 2. Sequential optimization per period (month or week) if multi-period data
+    period_col = next((c for c in ("Month", "Week") if c in df_pre.columns), None)
+
+    if period_col:
+        periods = sorted(df_pre[period_col].unique())
         results_1_list = []
         results_2_list = []
 
         print(
-            f"Detected {len(months)} months. Running batch optimization (Limit: {stock_limit}/mo)..."
+            f"Detected {len(periods)} {period_col.lower()}s."
+            f" Running batch optimization (Limit: {stock_limit}/{period_col.lower()[:2]})..."
         )
-        for month in months:
-            month_df = df_pre[df_pre["Month"] == month].copy()
-            r1 = solve_inventory_allocation(month_df, total_stock_limit=stock_limit)
-            r2 = solve_biased_allocation(month_df, bias_pct=0.20, total_capacity=stock_limit)
+        for p in periods:
+            period_df = df_pre[df_pre[period_col] == p].copy()
+            r1 = solve_inventory_allocation(period_df, total_stock_limit=stock_limit)
+            r2 = solve_biased_allocation(period_df, bias_pct=0.20, total_capacity=stock_limit)
             results_1_list.append(r1)
             results_2_list.append(r2)
 
@@ -238,8 +275,12 @@ def run(
 
     print("--- Allocation Summary ---")
     results_count = len(results_final_1)
-    period_count = results_final_1.get("Month", pd.Series(["Single"])).nunique()
-    print(f"Processed {results_count} allocation targets across {period_count} periods.")
+    period_count = (
+        results_final_1[period_col].nunique()
+        if period_col and period_col in results_final_1.columns
+        else 1
+    )
+    print(f"Processed {results_count} allocation targets across {period_count} {period}(s).")
     print(
         results_final_1[
             [
@@ -292,7 +333,19 @@ def main() -> None:
         default=str(DEFAULT_OUTPUT_CSV_2),
         help="Path to save scenario 2 results",
     )
-    parser.add_argument("--limit", type=int, default=500, help="Total stock capacity limit")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Total stock capacity limit (default: 100 for inventory_s001_north_may_2022.csv, 500 otherwise)",
+    )
+    parser.add_argument(
+        "--period",
+        type=str,
+        choices=["month", "week"],
+        default=None,
+        help="Aggregation period for date-based inputs (default: week for inventory_s001_north_may_2022.csv, month otherwise)",
+    )
     parser.add_argument("--store", type=str, help="Filter by Store ID (for forecast input)")
     parser.add_argument("--region", type=str, help="Filter by Region (for forecast input)")
     parser.add_argument("--date", type=str, help="Filter by Date/Month prefix (e.g. '2022-05')")
@@ -304,7 +357,14 @@ def main() -> None:
         "date_filter": args.date,
     }
 
-    run(Path(args.input), Path(args.output1), Path(args.output2), stock_limit=args.limit, **filters)
+    run(
+        Path(args.input),
+        Path(args.output1),
+        Path(args.output2),
+        stock_limit=args.limit,
+        period=args.period,
+        **filters,
+    )
 
 
 if __name__ == "__main__":

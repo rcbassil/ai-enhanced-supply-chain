@@ -33,7 +33,7 @@ ai-enhanced-supply-chain/
 │   │   ├── __main__.py
 │   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
 │   └── pyproject.toml
-├── query.py                            # Natural language query interface (Claude Opus 4.6)
+├── query.py                            # Natural language query interface (Claude Opus 4.7)
 ├── main.py
 └── pyproject.toml                      # uv workspace root
 ```
@@ -145,7 +145,7 @@ Allocates stock across products to maximize revenue under a total stock constrai
 
 **How it works:**
 
-1. **Monthly Batch Optimization** — The solver identifies all unique months in the dataset and runs an independent optimization for each, applying the capacity limit per period.
+1. **Period-Based Batch Optimization** — Groups data by `month` or `week` and runs an independent optimization per period. Defaults to monthly (limit 500) for the forecast output; automatically uses weekly (limit 100) for `inventory_s001_north_may_2022.csv`.
 2. **Scenario 1 (Fair vs. Optimal)** — Compares LP Revenue Maximization (OR-Tools GLOP) vs. Proportional Allocation (Largest Remainder Method). Proportional results are highlighted in summaries.
 3. **Carbon-Efficient** — Maximizes revenue while capping total storage CO2 emissions at a threshold (default 85% of LP Max emissions).
 4. **Scenario 2 (Guaranteed Minimum)** — Biased LP allocation guaranteeing each product at least 80% of its fair share.
@@ -153,11 +153,14 @@ Allocates stock across products to maximize revenue under a total stock constrai
 **Run:**
 
 ```bash
-# Run with integrated defaults (500 unit monthly limit)
+# Default: forecast output, monthly aggregation, limit 500
 uv run inventory-optimization
 
-# Run with custom capacity and filters
-uv run inventory-optimization --limit 1000 --store S001 --region North
+# Weekly store-specific file (auto-applies week + limit 100)
+uv run inventory-optimization --input data/inventory_s001_north_may_2022.csv
+
+# Override explicitly
+uv run inventory-optimization --period week --limit 200 --store S001 --region North
 ```
 
 **Output:**
@@ -181,7 +184,7 @@ The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline
 
 ### Natural Language Query (`query.py`)
 
-An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.6.
+An interactive CLI that lets you ask questions about the supply chain data and optimization results in plain English, powered by Claude Opus 4.7.
 
 **How it works:**
 

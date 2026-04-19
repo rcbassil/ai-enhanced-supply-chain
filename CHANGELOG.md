@@ -8,6 +8,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Period-Based Batch Optimization**: inventory solver now supports `month` and `week` aggregation periods via a new `--period` CLI flag and `period` parameter on `solve_inventory_allocation`, `solve_biased_allocation`, and `preprocess_input`.
+- **Input Auto-Detection** (`_INPUT_DEFAULTS`): `run()` automatically applies file-specific defaults for period and stock limit — `inventory_s001_north_may_2022.csv` defaults to `period=week`, `stock_limit=100`; all other inputs default to `period=month`, `stock_limit=500`.
+- **`period` tool parameter**: `run_inventory_solver` tool in `query.py` now exposes a `period` enum (`month`/`week`) so the AI assistant can request specific aggregation granularity.
+- **Capacity validation** in `query.py`: tool input `capacity` is validated to be a positive integer before reaching the solver, returning a descriptive error to the model if invalid.
+
+### Changed
+
+- **Default inventory input** changed from `inventory_s001_north_may_2022.csv` to `retail_forecast_with_original_values.csv` (forecast pipeline output), making `uv run inventory-optimization` run monthly batch optimization over the full forecast horizon out of the box.
+- **Model ID** updated from `claude-opus-4-6` to `claude-opus-4-7` in `query.py`.
+- **`query.py` system prompt** updated to accurately describe the default input, period, and capacity auto-detection behaviour.
+- **All READMEs** updated to reflect period-based optimization, auto-detection defaults, corrected run examples, and the chronological sort validation in demand forecasting.
+
+### Fixed
+
+- **Path traversal** in `query.py` `read_data_file` tool: filename is resolved with `.resolve()` and validated against `DATA_DIR` to prevent directory escape.
+- **`ImportError`** in `query.py`: corrected stale import `OUTPUT_CSV` → `DEFAULT_OUTPUT_CSV` from routing solver.
+- **`Path` re-export** removed from `inventory_optimization/__init__.py` (was unintentionally exposing `pathlib.Path` as a public API symbol).
+- **`zip(strict=False)` → `zip(strict=True)`** in proportional allocation remainder calculation to surface length mismatches immediately.
+- **`total_stock_limit <= 0` validation** added to `solve_inventory_allocation`.
+- **`total_demand <= 0` guard** added to both `solve_inventory_allocation` and `solve_biased_allocation` to prevent division-by-zero.
+- **`solve_inventory_allocation`** now raises `RuntimeError` on solver creation failure instead of returning `None` silently.
+- **`lp_results`** initialised to `[np.nan] * num_products` so a non-OPTIMAL LP solve produces `NaN` columns instead of a length-mismatch `ValueError`.
+- **`solve_biased_allocation`** now raises `RuntimeError` on non-OPTIMAL solve and on solver creation failure; removed dead `if status == OPTIMAL` guard that could never be reached.
+- **`leftover` clamped** with `max(0, ...)` in both solvers to prevent negative slice indices corrupting the Largest Remainder distribution.
+- **Carbon-Efficient columns** (`Carbon_Efficient_Stock/Revenue/CO2`) initialised to `NaN` before the `if ce_solver:` block so they always exist on the returned DataFrame.
+- **Route bounds/length checks** added to `calculate_total_distance` in routing solver.
+- **`RuntimeError`** raised when all routing matrix files are missing instead of writing an empty CSV.
+- **Date sort validation** added to demand forecasting `run()`: raises `ValueError` if input data is not chronologically ordered before the train/test split.
+- **`max_tokens`** in `query.py` made configurable via `CLAUDE_MAX_TOKENS` environment variable (default `4096`).
+- **Filters `TypeError`** fixed: `solve_inventory_allocation` and `solve_biased_allocation` now accept `store`, `region`, and `date_filter` kwargs and forward them to `preprocess_input` when loading from a file path.
+- **`test_nearest_neighbor`** assertion made robust: replaced exact route equality check with `route[0] == 0` and full-node-coverage check.
+
+---
+
+### Added
+
 - **Automated Testing Suite**: implemented a comprehensive test suite using `pytest`.
   - `tests/test_demand_forecasting.py`: validation for data preprocessing and XGBoost model building.
   - `tests/test_inventory_optimization.py`: tests for allocation strategies and sustainability configuration.
