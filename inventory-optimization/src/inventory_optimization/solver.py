@@ -17,10 +17,30 @@ _INPUT_DEFAULTS: dict[str, dict] = {
 
 def load_sustainability_config() -> dict:
     config_path = DATA_DIR / "sustainability_config.json"
-    if config_path.exists():
+    if not config_path.exists():
+        return {"storage_emission_factor": 0.12, "emissions_target_reduction": 0.15}
+
+    try:
         with open(config_path, "r") as f:
-            return json.load(f)
-    return {"storage_emission_factor": 0.12, "emissions_target_reduction": 0.15}
+            config = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        raise RuntimeError(f"Failed to read sustainability config: {e}") from e
+
+    storage_factor = config.get("storage_emission_factor")
+    if storage_factor is not None:
+        if not isinstance(storage_factor, (int, float)):
+            raise ValueError(f"storage_emission_factor must be numeric, got {type(storage_factor)}")
+        if storage_factor < 0:
+            raise ValueError(f"storage_emission_factor cannot be negative, got {storage_factor}")
+
+    target = config.get("emissions_target_reduction")
+    if target is not None:
+        if not isinstance(target, (int, float)):
+            raise ValueError(f"emissions_target_reduction must be numeric, got {type(target)}")
+        if not (0 <= target <= 1):
+            raise ValueError(f"emissions_target_reduction must be between 0 and 1, got {target}")
+
+    return config
 
 
 def preprocess_input(
@@ -145,7 +165,13 @@ def solve_inventory_allocation(
     co2_cap = total_lp_co2 * (1 - reduction_target)
 
     # --- Carbon-Efficient Allocation ---
-    # Goal: Maximize revenue while capping CO2 at 85% of LP Max CO2
+    # Goal: Maximize revenue while capping CO2 at 90% of LP Max CO2
+    if total_lp_co2 <= co2_cap:
+        df["Carbon_Efficient_Stock"] = df["LP_Max_Revenue_Stock"]
+        df["Carbon_Efficient_Revenue"] = df["LP_Revenue"]
+        df["Carbon_Efficient_CO2"] = df["LP_Max_CO2"]
+        return df
+
     df["Carbon_Efficient_Stock"] = np.nan
     df["Carbon_Efficient_Revenue"] = np.nan
     df["Carbon_Efficient_CO2"] = np.nan

@@ -10,7 +10,7 @@ The solver automatically processes multi-period datasets (e.g., multi-year forec
 
 1. **LP Revenue Maximization** — OR-Tools GLOP solver finds the optimal stock allocation that maximizes total revenue without exceeding the stock limit.
 2. **Proportional Allocation (Largest Remainder Method)** — Distributes stock proportionally to predicted demand, ensuring a "fair share" baseline.
-3. **Carbon-Efficient Allocation** — An LP variant that maximizes revenue while capping total storage CO2 emissions at a threshold (default 85% of LP Max emissions).
+3. **Carbon-Efficient Allocation** — An LP variant that maximizes revenue while capping total storage CO2 emissions at a threshold (configurable, typically 90% of LP Max emissions). Includes an early-exit optimization that inherits the base LP output natively if it already satisfies the carbon target.
 
 **Scenario 2 — Guaranteed Minimum** (`solve_biased_allocation`):
 

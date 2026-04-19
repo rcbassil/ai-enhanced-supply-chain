@@ -15,10 +15,23 @@ DEFAULT_DISTANCE_MATRICES = [
 
 def load_sustainability_config() -> dict:
     config_path = DATA_DIR / "sustainability_config.json"
-    if config_path.exists():
+    if not config_path.exists():
+        return {"shipping_emission_factor": 0.85}
+
+    try:
         with open(config_path, "r") as f:
-            return json.load(f)
-    return {"shipping_emission_factor": 0.85}
+            config = json.load(f)
+    except (json.JSONDecodeError, IOError) as e:
+        raise RuntimeError(f"Failed to read sustainability config: {e}") from e
+
+    factor = config.get("shipping_emission_factor")
+    if factor is not None:
+        if not isinstance(factor, (int, float)):
+            raise ValueError(f"shipping_emission_factor must be numeric, got {type(factor)}")
+        if factor < 0:
+            raise ValueError(f"shipping_emission_factor cannot be negative, got {factor}")
+
+    return config
 
 
 def calculate_emissions(distance: float, factor: float) -> float:

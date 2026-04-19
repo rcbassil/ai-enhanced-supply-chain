@@ -159,7 +159,7 @@ Allocates stock across products to maximize revenue under a total stock constrai
 
 1. **Period-Based Batch Optimization** — Groups data by `month` or `week` and runs an independent optimization per period. Defaults to monthly (limit 500) for the forecast output; automatically uses weekly (limit 100) for `inventory_s001_north_may_2022.csv`.
 2. **Scenario 1 (Fair vs. Optimal)** — Compares LP Revenue Maximization (OR-Tools GLOP) vs. Proportional Allocation (Largest Remainder Method). Proportional results are highlighted in summaries.
-3. **Carbon-Efficient** — Maximizes revenue while capping total storage CO2 emissions at a threshold (default 85% of LP Max emissions).
+3. **Carbon-Efficient** — Maximizes revenue while capping total storage CO2 emissions at a threshold (configurable, typically 90% of LP Max emissions). Includes an early-exit optimization if the baseline naturally meets the target.
 4. **Scenario 2 (Guaranteed Minimum)** — Biased LP allocation guaranteeing each product at least 80% of its fair share.
 
 **Run:**

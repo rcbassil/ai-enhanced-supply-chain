@@ -13,7 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **`.specify/`**: spec-kit project config, templates, git extension scripts, and workflow definitions for spec-driven development.
 - **`.agent/skills/`**: Claude Code skill definitions for all `speckit.*` commands (`specify`, `plan`, `tasks`, `implement`, `clarify`, `checklist`, `analyze`, git integration skills).
 - **`AGENTS.md`**: project context guide for AI coding agents — covers stack, structure, path conventions, run commands, spec-driven workflow, and test coverage.
+- **Carbon Cap Early Exit**: the Carbon-Efficient inventory scenario now skips the GLOP solver execution and inherits the LP Max Revenue result if it already satisfies the emissions target reduction.
 
+### Fixed
+
+- **Config input validation**: added strict numeric bounds checking and exception chaining (`raise ... from e`) in both `routing-optimization` and `inventory-optimization` solvers for robust `sustainability_config.json` loading.
 
 
 ### Added
