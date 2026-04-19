@@ -1,6 +1,6 @@
 # demand-forecasting
 
-XGBoost regressor that predicts retail store demand (units sold) from historical inventory data.
+XGBoost regressor that predicts retail store demand (units sold) from historical inventory data. This module serves as the primary data source for the `inventory-optimization` pipeline.
 
 ## How it works
 
