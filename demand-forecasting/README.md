@@ -1,16 +1,17 @@
 # demand-forecasting
 
-XGBoost regressor that predicts retail store demand (units sold) from historical inventory data.
+XGBoost regressor that predicts retail store demand (units sold) from historical inventory data. This module serves as the primary data source for the `inventory-optimization` pipeline.
 
 ## How it works
 
 1. Loads `data/retail_store_inventory.csv` from the workspace root
 2. Extracts temporal features from `Date` (year, month, day, day-of-week)
 3. Encodes categorical columns natively via XGBoost's `enable_categorical`
-4. Trains on 80% of the data using a chronological split (no shuffle)
-5. Evaluates with MAE and RMSE on the held-out 20% test set
-6. Writes predictions to `data/retail_forecast_with_original_values.csv`
-7. Plots actual vs. predicted demand and a top-15 feature importance chart
+4. Validates that rows are in chronological order (raises `ValueError` if not)
+5. Trains on 80% of the data using a chronological split (no shuffle)
+6. Evaluates with MAE and RMSE on the held-out 20% test set
+7. Writes predictions to `data/retail_forecast_with_original_values.csv`
+8. Plots actual vs. predicted demand and a top-15 feature importance chart
 
 ## Input
 

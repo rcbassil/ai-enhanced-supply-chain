@@ -1,4 +1,9 @@
-from demand_forecasting.model import DEFAULT_INPUT_CSV, DEFAULT_OUTPUT_CSV, Path, run
+from demand_forecasting.model import (
+    DEFAULT_INPUT_CSV,
+    DEFAULT_OUTPUT_CSV,
+    Path,
+    run,
+)
 
 
 def main() -> None:

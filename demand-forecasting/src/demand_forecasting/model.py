@@ -107,6 +107,11 @@ def plot_results(y_test: np.ndarray, predictions: np.ndarray, model: xgb.XGBRegr
 def run(input_path: Path = DEFAULT_INPUT_CSV, output_path: Path = DEFAULT_OUTPUT_CSV) -> None:
     df_original, df_ml = load_data(input_path)
 
+    if not df_ml["Date"].is_monotonic_increasing:
+        raise ValueError(
+            "Input data must be sorted chronologically by Date before train/test split."
+        )
+
     X = df_ml.drop(["Date"], axis=1)
     y = df_ml[TARGET]
 
