@@ -180,6 +180,16 @@ The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline
 **Sequence:**
 `Demand Forecasting` ➔ `Inventory Optimization` ➔ `Routing Optimization`
 
+**Manual trigger inputs (`workflow_dispatch`):**
+
+| Input | Description | Default |
+|-------|-------------|---------|
+| `forecast_input` | Input CSV for demand forecasting | `data/retail_store_inventory.csv` |
+| `inventory_input` | Input CSV for inventory optimization | `data/retail_forecast_with_original_values.csv` |
+| `inventory_limit` | Stock capacity limit per period | `500` |
+| `inventory_period` | Aggregation period (`month` or `week`) | `month` |
+| `routing_inputs` | Space-separated paths for distance matrices | `data/distance_matrix_1.csv data/distance_matrix_2.csv` |
+
 ---
 
 ### Natural Language Query (`query.py`)

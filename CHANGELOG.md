@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Period-Based Batch Optimization**: inventory solver now supports `month` and `week` aggregation periods via a new `--period` CLI flag and `period` parameter on `solve_inventory_allocation`, `solve_biased_allocation`, and `preprocess_input`.
 - **Input Auto-Detection** (`_INPUT_DEFAULTS`): `run()` automatically applies file-specific defaults for period and stock limit — `inventory_s001_north_may_2022.csv` defaults to `period=week`, `stock_limit=100`; all other inputs default to `period=month`, `stock_limit=500`.
 - **`period` tool parameter**: `run_inventory_solver` tool in `query.py` now exposes a `period` enum (`month`/`week`) so the AI assistant can request specific aggregation granularity.
+- **Pipeline `inventory_limit` and `inventory_period` inputs**: GitHub Actions `workflow_dispatch` now accepts `inventory_limit` (default `500`) and `inventory_period` (default `month`) to control inventory optimization behaviour without editing the workflow file.
 - **Capacity validation** in `query.py`: tool input `capacity` is validated to be a positive integer before reaching the solver, returning a descriptive error to the model if invalid.
 
 ### Changed

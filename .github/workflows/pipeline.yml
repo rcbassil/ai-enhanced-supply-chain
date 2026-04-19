@@ -17,6 +17,14 @@ on:
         description: "Space-separated paths for routing optimization matrices"
         required: false
         default: "data/distance_matrix_1.csv data/distance_matrix_2.csv"
+      inventory_limit:
+        description: "Stock capacity limit per period for inventory optimization"
+        required: false
+        default: "500"
+      inventory_period:
+        description: "Aggregation period for inventory optimization (month or week)"
+        required: false
+        default: "month"
 
 jobs:
   demand-forecasting:
@@ -71,7 +79,8 @@ jobs:
 
       - name: Run inventory-optimization
         run: uv run inventory-optimization --input ${{ inputs.inventory_input ||
-          'data/retail_forecast_with_original_values.csv' }} --limit 500
+          'data/retail_forecast_with_original_values.csv' }} --limit ${{ inputs.inventory_limit ||
+          '500' }} --period ${{ inputs.inventory_period || 'month' }}
 
       - name: Upload inventory output
         uses: actions/upload-artifact@v7
