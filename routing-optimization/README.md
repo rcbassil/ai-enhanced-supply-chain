@@ -7,7 +7,7 @@ TSP solver for delivery route optimization using a Nearest Neighbor construction
 1. Loads distance matrices from `data/` at the workspace root.
 2. Builds an initial route with the **Nearest Neighbor** heuristic — greedily visits the closest unvisited node, starting from the warehouse (node `0`).
 3. Refines the route with **2-opt** — iteratively reverses sub-segments until no improvement is found.
-4. Calculates **Total Carbon Footprint** (kg CO2) per route based on travel distance and vehicle emission factors.
+4. Calculates **Total Carbon Footprint** (kg CO2) per route based on travel distance. Emission factors are loaded dynamically from `data/sustainability_config.json` with strict input validation.
 
 ## Input
 
