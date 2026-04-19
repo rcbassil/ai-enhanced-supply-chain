@@ -55,6 +55,8 @@ def preprocess_input(
 
 
 def solve_inventory_allocation(df, total_stock_limit=500):
+    if total_stock_limit <= 0:
+        raise ValueError(f"total_stock_limit must be a positive integer, got {total_stock_limit}")
     # If a path was passed instead of a DataFrame, load it
     if isinstance(df, (str, Path)):
         df = pd.read_csv(df)
@@ -96,7 +98,7 @@ def solve_inventory_allocation(df, total_stock_limit=500):
 
     # Integer parts
     integer_parts = [int(np.floor(q)) for q in exact_quotas]
-    remainders = [q - i for q, i in zip(exact_quotas, integer_parts, strict=False)]
+    remainders = [q - i for q, i in zip(exact_quotas, integer_parts, strict=True)]
 
     # Distribute remaining units to those with largest remainders
     leftover = total_stock_limit - sum(integer_parts)
@@ -138,6 +140,10 @@ def solve_inventory_allocation(df, total_stock_limit=500):
         for i in range(num_products):
             ce_objective.SetCoefficient(ce_x[i], prices[i])
         ce_objective.SetMaximization()
+
+        df["Carbon_Efficient_Stock"] = np.nan
+        df["Carbon_Efficient_Revenue"] = np.nan
+        df["Carbon_Efficient_CO2"] = np.nan
 
         ce_status = ce_solver.Solve()
         if ce_status == pywraplp.Solver.OPTIMAL:

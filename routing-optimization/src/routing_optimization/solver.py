@@ -31,6 +31,12 @@ def load_matrix(path: Path) -> np.ndarray:
 
 
 def calculate_total_distance(route: list[int], matrix: np.ndarray) -> float:
+    if len(route) < 2:
+        raise ValueError(f"Route must have at least 2 nodes, got {len(route)}")
+    n = matrix.shape[0]
+    invalid = [idx for idx in route if idx < 0 or idx >= n]
+    if invalid:
+        raise ValueError(f"Route contains out-of-bounds indices for {n}x{n} matrix: {invalid}")
     dist = sum(matrix[route[i], route[i + 1]] for i in range(len(route) - 1))
     dist += matrix[route[-1], route[0]]
     return dist
@@ -110,6 +116,9 @@ def run(
                 "total_emissions_kg": total_emissions,
             }
         )
+
+    if not rows:
+        raise RuntimeError("No valid distance matrix files found. Cannot produce routing results.")
 
     pd.DataFrame(rows).to_csv(output_path, index=False)
     print(f"\nResults saved to '{output_path.name}'.")

@@ -116,7 +116,9 @@ def execute_tool(name: str, tool_input: dict) -> str:
 
     elif name == "read_data_file":
         filename = tool_input["filename"]
-        path = DATA_DIR / filename
+        path = (DATA_DIR / filename).resolve()
+        if not str(path).startswith(str(DATA_DIR.resolve())):
+            return f"Access denied: '{filename}' is outside the data directory."
         if not path.exists():
             available = ", ".join(f.name for f in sorted(DATA_DIR.glob("*.csv")))
             return f"File '{filename}' not found. Available files: {available}"
@@ -184,7 +186,7 @@ def execute_tool(name: str, tool_input: dict) -> str:
 
     elif name == "run_routing_solver":
         try:
-            from routing_optimization.solver import OUTPUT_CSV as ROUTING_CSV
+            from routing_optimization.solver import DEFAULT_OUTPUT_CSV as ROUTING_CSV
             from routing_optimization.solver import run as run_routing
 
             run_routing()
@@ -205,7 +207,7 @@ def query(user_message: str, history: list[dict]) -> list[dict]:
     while True:
         with client.messages.stream(
             model="claude-opus-4-6",
-            max_tokens=16000,
+            max_tokens=int(os.environ.get("CLAUDE_MAX_TOKENS", "4096")),
             thinking={"type": "adaptive"},
             system=SYSTEM_PROMPT,
             tools=tools,
