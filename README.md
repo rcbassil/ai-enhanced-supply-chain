@@ -34,10 +34,14 @@ ai-enhanced-supply-chain/
 │   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
 │   └── pyproject.toml
 ├── specs/
-│   └── 001-sustainability-metrics/     # Spec-kit spec: sustainability metrics feature
+│   ├── constitution.md                          # Project principles and coding standards
+│   └── 001-sustainability-metrics/              # Sustainability metrics feature spec
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks.md
+├── .specify/                                    # Spec-kit tooling config, templates, extensions
+├── .agent/skills/                               # Claude Code skill definitions (speckit commands)
+├── AGENTS.md                                    # Project context guide for AI coding agents
 ├── query.py                            # Natural language query interface (Claude Opus 4.7)
 ├── main.py
 └── pyproject.toml                      # uv workspace root

@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Spec-kit integration**: adopted the [GitHub Spec Kit](https://github.com/speckit) structure for spec-driven development. Feature specs now live under `specs/` (tooling config under `.specify/`).
 - **`specs/001-sustainability-metrics/`**: migrated and reformatted the sustainability metrics feature spec to the spec-kit v0.7.3 template — prioritized user stories with Given/When/Then acceptance scenarios, FR-coded functional requirements, measurable success criteria, and a task list organized by user story with parallel-execution markers.
+- **`.specify/`**: spec-kit project config, templates, git extension scripts, and workflow definitions for spec-driven development.
+- **`.agent/skills/`**: Claude Code skill definitions for all `speckit.*` commands (`specify`, `plan`, `tasks`, `implement`, `clarify`, `checklist`, `analyze`, git integration skills).
+- **`AGENTS.md`**: project context guide for AI coding agents — covers stack, structure, path conventions, run commands, spec-driven workflow, and test coverage.
 
 
 
