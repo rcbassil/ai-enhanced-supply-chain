@@ -33,6 +33,11 @@ ai-enhanced-supply-chain/
 │   │   ├── __main__.py
 │   │   └── solver.py                   # Nearest Neighbor + 2-opt TSP solver
 │   └── pyproject.toml
+├── specs/
+│   └── 001-sustainability-metrics/     # Spec-kit spec: sustainability metrics feature
+│       ├── spec.md
+│       ├── plan.md
+│       └── tasks.md
 ├── query.py                            # Natural language query interface (Claude Opus 4.7)
 ├── main.py
 └── pyproject.toml                      # uv workspace root
