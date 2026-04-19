@@ -38,7 +38,7 @@ def test_solve_inventory_allocation(tmp_path, mocker):
     )
     df.to_csv(csv_path, index=False)
 
-    results = solve_inventory_allocation(csv_path)
+    results = solve_inventory_allocation(csv_path, total_stock_limit=100)
 
     assert "LP_Max_Revenue_Stock" in results.columns
     assert "Prop_Stock_LRM" in results.columns
@@ -58,8 +58,9 @@ def test_solve_biased_allocation(tmp_path):
     )
     df.to_csv(csv_path, index=False)
 
-    results = solve_biased_allocation(csv_path, bias_pct=0.20)
+    results = solve_biased_allocation(csv_path, bias_pct=0.20, total_capacity=100)
 
+    assert results is not None
     assert "Final_Stock" in results.columns
     assert "Revenue" in results.columns
     assert results["Final_Stock"].sum() == 100

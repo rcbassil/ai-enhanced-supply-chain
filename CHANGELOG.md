@@ -18,12 +18,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Ruff Configuration**: integrated `ruff` as the primary linter and formatter, with custom rules in `pyproject.toml`.
 
 ### Changed
-- **Inventory Solver Refactoring**: decoupled `total_stock_limit` from the core logic; it is now a configurable parameter across all functions and CLI arguments (`--limit`).
-- **Query Interface Engineering**:
-  - Removed all `sys.path` manipulation. Leveraging native `uv` workspace package discovery for module imports.
-  - Improved `ANTHROPIC_API_KEY` handling with explicit environment validation.
-  - Updated the AI inventory tool to accept a dynamic `capacity` parameter.
-- **Pipeline Triggers**: updated GitHub Actions workflow to only run automatically on pull requests targeting the `main` branch. Removed automatic runs on every `push`.
+- **Cross-Module Pipeline Integration**: the GitHub Actions workflow now automatically pipes the `demand-forecasting` output into the `inventory-optimization` module. The inventory step now performs a **monthly batch optimization** over the entire horizon, applying a baseline capacity of **500 units per month**.
+- **Inventory Solver Refactoring**:
+  - Redesigned the core execution loop to support multi-period sequential optimization.
+  - Decoupled `total_stock_limit` from the core logic; it is now a globally configurable parameter available via CLI (`--limit`).
+  - Synchronized and standardized CLI arguments (`--input`, `--limit`, `--store`, `--region`, `--date`) across all module and package entry points.
+- **Reporting Improvements**:
+  - Terminal summary output now prioritizes **Proportional Allocation** metrics (Revenue and CO2) for Scenario 1.
+  - Updated the AI query tool to ensure consistency between natural language summaries and CLI outputs.
+- **Pipeline Triggers**: updated GitHub Actions workflow to only run automatically on pull requests targeting the `main` branch.
 - **Dataset Path Decoupling**: refactored all pipeline modules (`demand-forecasting`, `inventory-optimization`, `routing-optimization`) to remove hardcoded file paths. Input and output paths are now dynamic and configurable.
 - **Demand Forecasting**: removed `Demand Forecast` column from `data/retail_store_inventory.csv` and from model training. The dataset now includes richer features — `Inventory Level`, `Units Ordered`, `Price`, `Discount`, `Holiday/Promotion`, and `Competitor Pricing` — replacing the former forecast column.
 

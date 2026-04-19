@@ -19,10 +19,46 @@ def load_sustainability_config() -> dict:
     return {"storage_emission_factor": 0.12, "emissions_target_reduction": 0.15}
 
 
-def solve_inventory_allocation(file_path, total_stock_limit=100):
-    # Load the dataset
-    df = pd.read_csv(file_path)
-    df.columns = df.columns.str.strip()  # Clean column names
+def preprocess_input(
+    df: pd.DataFrame, store: str = None, region: str = None, date_filter: str = None
+) -> pd.DataFrame:
+    """Detects and transforms forecast module output into solver-ready format."""
+    df.columns = df.columns.str.strip()
+
+    if "Product ID" in df.columns and "Predicted_Demand_Forecast" in df.columns:
+        if store:
+            df = df[df["Store ID"] == store]
+        if region:
+            df = df[df["Region"] == region]
+        if date_filter:
+            df = df[df["Date"].str.startswith(date_filter)]
+
+        # Group by Month if Date exists
+        groupby_cols = ["Product ID"]
+        if "Date" in df.columns:
+            df["Month"] = pd.to_datetime(df["Date"]).dt.to_period("M").astype(str)
+            groupby_cols.append("Month")
+
+        df = (
+            df.groupby(groupby_cols)
+            .agg({"Price": "mean", "Predicted_Demand_Forecast": "sum"})
+            .reset_index()
+        )
+
+        # Mapping to solver columns
+        if "Month" in df.columns:
+            df.columns = ["Product", "Month", "Price", "Predicted Demand Forecast"]
+        else:
+            df.columns = ["Product", "Price", "Predicted Demand Forecast"]
+
+    return df
+
+
+def solve_inventory_allocation(df, total_stock_limit=500):
+    # If a path was passed instead of a DataFrame, load it
+    if isinstance(df, (str, Path)):
+        df = pd.read_csv(df)
+        df = preprocess_input(df)
 
     products = df["Product"].tolist()
     prices = df["Price"].tolist()
@@ -37,7 +73,7 @@ def solve_inventory_allocation(file_path, total_stock_limit=100):
     # Variables: x[i] is the number of units of product i to stock
     x = [solver.NumVar(0, demands[i], f"x_{i}") for i in range(num_products)]
 
-    # Constraint: Total stock must not exceed 100
+    # Constraint: Total stock must not exceed 500
     solver.Add(sum(x) <= total_stock_limit)
 
     # Objective: Maximize total revenue
@@ -112,10 +148,11 @@ def solve_inventory_allocation(file_path, total_stock_limit=100):
     return df
 
 
-def solve_biased_allocation(file_path, bias_pct=0.20, total_capacity=100):
-    # Load Data
-    df = pd.read_csv(file_path)
-    df.columns = df.columns.str.strip()
+def solve_biased_allocation(df, bias_pct=0.20, total_capacity=500):
+    # If a path was passed instead of a DataFrame, load it
+    if isinstance(df, (str, Path)):
+        df = pd.read_csv(df)
+        df = preprocess_input(df)
 
     total_demand = df["Predicted Demand Forecast"].sum()
 
@@ -126,20 +163,20 @@ def solve_biased_allocation(file_path, bias_pct=0.20, total_capacity=100):
     solver = pywraplp.Solver.CreateSolver("GLOP")
     stocks = []
 
-    for i, row in df.iterrows():
+    for _idx, (i, row) in enumerate(df.iterrows()):
         # Constraint: Must receive at least (1 - bias) of the Fair Share
         lower_bound = row["Fair_Share"] * (1 - bias_pct)
         # Constraint: Cannot exceed forecasted demand
         upper_bound = min(row["Predicted Demand Forecast"], total_capacity)
         stocks.append(solver.NumVar(lower_bound, upper_bound, f"s_{i}"))
 
-    # Constraint: Total capacity must be exactly 100
+    # Constraint: Total capacity must be exactly 500
     solver.Add(solver.Sum(stocks) == total_capacity)
 
     # Objective: Maximize Revenue (Price * Stock)
     objective = solver.Objective()
-    for i, row in df.iterrows():
-        objective.SetCoefficient(stocks[i], row["Price"])
+    for idx, (_i, row) in enumerate(df.iterrows()):
+        objective.SetCoefficient(stocks[idx], row["Price"])
     objective.SetMaximization()
 
     status = solver.Solve()
@@ -164,67 +201,70 @@ def run(
     input_path: Path = DEFAULT_INPUT_CSV,
     output_path_1: Path = DEFAULT_OUTPUT_CSV_1,
     output_path_2: Path = DEFAULT_OUTPUT_CSV_2,
-    stock_limit: int = 100,
+    stock_limit: int = 500,
+    **filters,
 ) -> None:
-    results = solve_inventory_allocation(input_path, total_stock_limit=stock_limit)
+    # 1. Load and initial preprocess
+    df_raw = pd.read_csv(input_path)
+    df_pre = preprocess_input(df_raw, **filters)
 
-    print("--- Allocation Comparison ---")
+    # 2. Sequential optimization per Month (if multi-period)
+    if "Month" in df_pre.columns:
+        months = sorted(df_pre["Month"].unique())
+        results_1_list = []
+        results_2_list = []
+
+        print(
+            f"Detected {len(months)} months. Running batch optimization (Limit: {stock_limit}/mo)..."
+        )
+        for month in months:
+            month_df = df_pre[df_pre["Month"] == month].copy()
+            r1 = solve_inventory_allocation(month_df, total_stock_limit=stock_limit)
+            r2 = solve_biased_allocation(month_df, bias_pct=0.20, total_capacity=stock_limit)
+            results_1_list.append(r1)
+            results_2_list.append(r2)
+
+        results_final_1 = pd.concat(results_1_list, ignore_index=True)
+        results_final_2 = pd.concat(results_2_list, ignore_index=True)
+    else:
+        results_final_1 = solve_inventory_allocation(df_pre, total_stock_limit=stock_limit)
+        results_final_2 = solve_biased_allocation(df_pre, bias_pct=0.20, total_capacity=stock_limit)
+
+    print("--- Allocation Summary ---")
+    results_count = len(results_final_1)
+    period_count = results_final_1.get("Month", pd.Series(["Single"])).nunique()
+    print(f"Processed {results_count} allocation targets across {period_count} periods.")
     print(
-        results[
+        results_final_1[
             [
                 "Product",
                 "Price",
+                "Predicted Demand Forecast",
                 "LP_Max_Revenue_Stock",
                 "Prop_Stock_LRM",
-                "Carbon_Efficient_Stock",
             ]
-        ]
+        ].head(20)
     )
 
-    print(f"\nTotal Revenue (LP Max): ${results['LP_Revenue'].sum():,.2f}")
-    print(f"Total CO2 (LP Max): {results['LP_Max_CO2'].sum():,.2f} kg")
+    results_final_1.to_csv(output_path_1, index=False)
+    print(f"\nScenario 1 results saved to '{output_path_1.name}'.")
 
-    print(f"\nTotal Revenue (Carbon-Efficient): ${results['Carbon_Efficient_Revenue'].sum():,.2f}")
-    print(f"Total CO2 (Carbon-Efficient): {results['Carbon_Efficient_CO2'].sum():,.2f} kg")
+    results_final_2.to_csv(output_path_2, index=False)
+    print(f"Scenario 2 results saved to '{output_path_2.name}'.")
 
-    print(f"\nTotal Revenue (Proportional): ${results['Prop_Revenue'].sum():,.2f}")
-    print(f"Total CO2 (Proportional): {results['Prop_CO2'].sum():,.2f} kg")
-
-    summary = pd.DataFrame(
-        [
-            {
-                "Product": "TOTAL (LP Max)",
-                "LP_Revenue": results["LP_Revenue"].sum(),
-                "LP_Max_CO2": results["LP_Max_CO2"].sum(),
-            },
-            {
-                "Product": "TOTAL (Proportional)",
-                "Prop_Revenue": results["Prop_Revenue"].sum(),
-                "Prop_CO2": results["Prop_CO2"].sum(),
-            },
-            {
-                "Product": "TOTAL (Carbon-Efficient)",
-                "Carbon_Efficient_Revenue": results["Carbon_Efficient_Revenue"].sum(),
-                "Carbon_Efficient_CO2": results["Carbon_Efficient_CO2"].sum(),
-            },
-        ]
+    # Global Revenue totals
+    prop_rev = (
+        results_final_1["Prop_Revenue"].sum() if "Prop_Revenue" in results_final_1.columns else 0
     )
-    pd.concat([results, summary], ignore_index=True).to_csv(output_path_1, index=False)
-    print(f"\nResults saved to '{output_path_1.name}'.")
+    prop_co2 = results_final_1["Prop_CO2"].sum() if "Prop_CO2" in results_final_1.columns else 0
+    bias_rev = results_final_2["Revenue"].sum() if "Revenue" in results_final_2.columns else 0
 
-    # Run for 20% bias
-    results = solve_biased_allocation(input_path, bias_pct=0.20)
-    print("\n--- 20% Bias Allocation ---")
-    print(results[["Product", "Price", "Predicted Demand Forecast", "Final_Stock", "Revenue"]])
-    print(f"Total Revenue: ${results['Revenue'].sum():,.2f}")
-
-    summary = pd.DataFrame([{"Product": "TOTAL Revenue", "Revenue": results["Revenue"].sum()}])
-
-    pd.concat([results, summary], ignore_index=True).to_csv(output_path_2, index=False)
-    print(f"\nResults saved to '{output_path_2.name}'.")
+    print(f"\nTotal Revenue (Scenario 1 - Proportional): ${prop_rev:,.2f}")
+    print(f"Total CO2 (Scenario 1 - Proportional): {prop_co2:,.2f} kg")
+    print(f"Total Revenue (Scenario 2 - 20% Bias): ${bias_rev:,.2f}")
 
 
-if __name__ == "__main__":
+def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Inventory Optimization Pipeline")
@@ -246,7 +286,20 @@ if __name__ == "__main__":
         default=str(DEFAULT_OUTPUT_CSV_2),
         help="Path to save scenario 2 results",
     )
-    parser.add_argument("--limit", type=int, default=100, help="Total stock capacity limit")
+    parser.add_argument("--limit", type=int, default=500, help="Total stock capacity limit")
+    parser.add_argument("--store", type=str, help="Filter by Store ID (for forecast input)")
+    parser.add_argument("--region", type=str, help="Filter by Region (for forecast input)")
+    parser.add_argument("--date", type=str, help="Filter by Date/Month prefix (e.g. '2022-05')")
     args = parser.parse_args()
 
-    run(Path(args.input), Path(args.output1), Path(args.output2), stock_limit=args.limit)
+    filters = {
+        "store": args.store,
+        "region": args.region,
+        "date_filter": args.date,
+    }
+
+    run(Path(args.input), Path(args.output1), Path(args.output2), stock_limit=args.limit, **filters)
+
+
+if __name__ == "__main__":
+    main()

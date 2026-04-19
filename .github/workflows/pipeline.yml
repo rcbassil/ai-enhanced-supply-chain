@@ -10,9 +10,9 @@ on:
         required: false
         default: "data/retail_store_inventory.csv"
       inventory_input:
-        description: "Input CSV for inventory optimization (Scenario 1)"
+        description: "Input CSV for inventory optimization (defaults to forecast output)"
         required: false
-        default: "data/inventory_s001_north_may_2022.csv"
+        default: "data/retail_forecast_with_original_values.csv"
       routing_inputs:
         description: "Space-separated paths for routing optimization matrices"
         required: false
@@ -71,7 +71,7 @@ jobs:
 
       - name: Run inventory-optimization
         run: uv run inventory-optimization --input ${{ inputs.inventory_input ||
-          'data/inventory_s001_north_may_2022.csv' }}
+          'data/retail_forecast_with_original_values.csv' }} --limit 500
 
       - name: Upload inventory output
         uses: actions/upload-artifact@v7

@@ -139,28 +139,31 @@ uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_ma
 
 ### Inventory Optimization (`inventory-optimization/`)
 
-Allocates stock across products to maximise revenue under a total stock constraint. Produces two scenario outputs.
+Allocates stock across products to maximize revenue under a total stock constraint. It is fully integrated with the Demand Forecasting module, allowing for batch multi-period optimization.
 
-**Input:** `data/inventory_s001_north_may_2022.csv` — requires `Predicted Demand Forecast` from the demand-forecasting output.
+**Input:** `data/retail_forecast_with_original_values.csv` — automatically aggregated and processed from the forecasting output.
 
 **How it works:**
 
-1. **Scenario 1** — compares LP Revenue Maximisation (OR-Tools GLOP) vs Proportional Allocation (Largest Remainder Method)
-2. **Carbon-Efficient** — part of Scenario 1, this LP allocation maximises revenue while capping total storage CO2 emissions at a threshold (configurable, default 85% of LP Max emissions).
-3. **Scenario 2** — biased LP allocation guaranteeing each product at least 80% of its fair share, then maximising revenue within those bounds
+1. **Monthly Batch Optimization** — The solver identifies all unique months in the dataset and runs an independent optimization for each, applying the capacity limit per period.
+2. **Scenario 1 (Fair vs. Optimal)** — Compares LP Revenue Maximization (OR-Tools GLOP) vs. Proportional Allocation (Largest Remainder Method). Proportional results are highlighted in summaries.
+3. **Carbon-Efficient** — Maximizes revenue while capping total storage CO2 emissions at a threshold (default 85% of LP Max emissions).
+4. **Scenario 2 (Guaranteed Minimum)** — Biased LP allocation guaranteeing each product at least 80% of its fair share.
 
 **Run:**
 
 ```bash
-# Run with defaults
+# Run with integrated defaults (500 unit monthly limit)
 uv run inventory-optimization
-# Run with custom input and outputs
-uv run inventory-optimization --input data/my_data.csv --output1 res1.csv --output2 res2.csv
+
+# Run with custom capacity and filters
+uv run inventory-optimization --limit 1000 --store S001 --region North
 ```
 
 **Output:**
-- `data/inventory_optimization_results_scenario_1.csv` (includes LP, Prop, and Carbon-Efficient metrics).
+- `data/inventory_optimization_results_scenario_1.csv` (LP, Prop, and Carbon-Efficient).
 - `data/inventory_optimization_results_scenario_2.csv`.
+- Terminal summary of **Total Proportional Revenue** and **Total CO2**.
 
 ---
 
@@ -168,8 +171,8 @@ uv run inventory-optimization --input data/my_data.csv --output1 res1.csv --outp
 
 The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline.yml`.
 
-- **Automated**: Runs on every `push` to `main` or `develop`.
-- **Manual Trigger**: Supports `workflow_dispatch` with custom inputs. You can trigger the pipeline from the GitHub UI and provide specific paths for each optimization stage.
+- **Automated**: Runs automatically on **Pull Requests** targeting the `main` branch.
+- **Manual Trigger**: Supports `workflow_dispatch` with automated data hand-offs between stages.
 
 **Sequence:**
 `Demand Forecasting` ➔ `Inventory Optimization` ➔ `Routing Optimization`
@@ -201,9 +204,10 @@ uv run python query.py
 
 **Example questions:**
 
+- _"Optimize inventory for Store S001 in May 2022 using the latest forecasts"_
 - _"Which product generates the most revenue under LP max allocation?"_
 - _"How much CO2 do we save by switching to the Carbon-Efficient inventory scenario?"_
-- _"What is the total carbon footprint for Distance Matrix 1?"_
+- _"What is the total carbon footprint for the whole sequence?"_
 - _"Explain the fairness tradeoff in the 20% biased scenario"_
 - _"Why does LP ignore P3 even though it has the highest demand?"_
 
