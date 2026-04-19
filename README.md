@@ -1,4 +1,4 @@
-# AI-Enhanced Supply Chain 🚧👷
+# AI-Enhanced Supply Chain
 
 A Python toolkit applying machine learning and combinatorial optimization to supply chain problems. Organized as a uv workspace with three modules: demand forecasting, inventory optimization, and routing optimization.
 
@@ -69,11 +69,13 @@ The project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting
 ### Pre-commit Hooks
 
 Hooks are configured to run automatically on every commit to ensure:
+
 - Code is formatted according to project standards.
 - Linting errors are identified and auto-fixed where possible.
 - All tests pass before a commit is finalized.
 
 To run hooks manually:
+
 ```bash
 uv run pre-commit run --all-files
 ```
@@ -131,6 +133,7 @@ uv run routing-optimization --inputs data/distance_matrix_1.csv data/distance_ma
 ```
 
 **Output:**
+
 - Optimized route sequence and total distance (km).
 - **Total Carbon Footprint** (kg CO2) per route based on shipping emission factors.
 - `data/routing_optimization_results.csv` including CO2 metrics.
@@ -164,6 +167,7 @@ uv run inventory-optimization --period week --limit 200 --store S001 --region No
 ```
 
 **Output:**
+
 - `data/inventory_optimization_results_scenario_1.csv` (LP, Prop, and Carbon-Efficient).
 - `data/inventory_optimization_results_scenario_2.csv`.
 - Terminal summary of **Total Proportional Revenue** and **Total CO2**.
@@ -182,13 +186,13 @@ The project includes a multi-stage CI/CD pipeline in `.github/workflows/pipeline
 
 **Manual trigger inputs (`workflow_dispatch`):**
 
-| Input | Description | Default |
-|-------|-------------|---------|
-| `forecast_input` | Input CSV for demand forecasting | `data/retail_store_inventory.csv` |
-| `inventory_input` | Input CSV for inventory optimization | `data/retail_forecast_with_original_values.csv` |
-| `inventory_limit` | Stock capacity limit per period | `500` |
-| `inventory_period` | Aggregation period (`month` or `week`) | `month` |
-| `routing_inputs` | Space-separated paths for distance matrices | `data/distance_matrix_1.csv data/distance_matrix_2.csv` |
+| Input              | Description                                 | Default                                                 |
+| ------------------ | ------------------------------------------- | ------------------------------------------------------- |
+| `forecast_input`   | Input CSV for demand forecasting            | `data/retail_store_inventory.csv`                       |
+| `inventory_input`  | Input CSV for inventory optimization        | `data/retail_forecast_with_original_values.csv`         |
+| `inventory_limit`  | Stock capacity limit per period             | `500`                                                   |
+| `inventory_period` | Aggregation period (`month` or `week`)      | `month`                                                 |
+| `routing_inputs`   | Space-separated paths for distance matrices | `data/distance_matrix_1.csv data/distance_matrix_2.csv` |
 
 ---
 
