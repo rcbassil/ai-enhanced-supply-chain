@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Spec-kit integration**: adopted the [GitHub Spec Kit](https://github.com/speckit) structure for spec-driven development. Feature specs now live under `specs/` (tooling config under `.specify/`).
+- **`specs/001-sustainability-metrics/`**: migrated and reformatted the sustainability metrics feature spec to the spec-kit v0.7.3 template — prioritized user stories with Given/When/Then acceptance scenarios, FR-coded functional requirements, measurable success criteria, and a task list organized by user story with parallel-execution markers.
+- **`.specify/`**: spec-kit project config, templates, git extension scripts, and workflow definitions for spec-driven development.
+- **`.agent/skills/`**: Claude Code skill definitions for all `speckit.*` commands (`specify`, `plan`, `tasks`, `implement`, `clarify`, `checklist`, `analyze`, git integration skills).
+- **`AGENTS.md`**: project context guide for AI coding agents — covers stack, structure, path conventions, run commands, spec-driven workflow, and test coverage.
+
+
+
+### Added
+
 - **Period-Based Batch Optimization**: inventory solver now supports `month` and `week` aggregation periods via a new `--period` CLI flag and `period` parameter on `solve_inventory_allocation`, `solve_biased_allocation`, and `preprocess_input`.
 - **Input Auto-Detection** (`_INPUT_DEFAULTS`): `run()` automatically applies file-specific defaults for period and stock limit — `inventory_s001_north_may_2022.csv` defaults to `period=week`, `stock_limit=100`; all other inputs default to `period=month`, `stock_limit=500`.
 - **`period` tool parameter**: `run_inventory_solver` tool in `query.py` now exposes a `period` enum (`month`/`week`) so the AI assistant can request specific aggregation granularity.
